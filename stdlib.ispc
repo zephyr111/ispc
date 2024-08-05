@@ -382,6 +382,8 @@ __declspec(safe) static inline uniform int popcnt(bool v) {
 
 __declspec(safe) static inline uniform unsigned int64 lanemask() { return __movmsk(__mask); }
 
+__declspec(safe) static inline bool isactivelane() { return __mask != 0; }
+
 __declspec(safe) static inline uniform unsigned int64 packmask(bool v) {
 #if (ISPC_MASK_BITS == 1)
     return __movmsk(v & __mask);
