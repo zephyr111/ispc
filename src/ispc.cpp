@@ -1056,11 +1056,12 @@ Target::Target(Arch arch, const char *cpu, ISPCTarget ispc_target, PICLevel picL
         CPUfromISA = (m_ispc_target == ISPCTarget::avx2vnni_i32x16) ? CPU_ADL : CPU_Haswell;
         break;
     case ISPCTarget::avx2_i64x4:
+    case ISPCTarget::avx2_i64x8:
         this->m_isa = Target::AVX2;
-        this->m_nativeVectorWidth = 8; /* native vector width in terms of floats */
+        this->m_nativeVectorWidth = (m_ispc_target == ISPCTarget::avx2_i64x4) ? 8 : 16; /* native vector width in terms of floats */
         this->m_nativeVectorAlignment = 32;
         this->m_dataTypeWidth = 64;
-        this->m_vectorWidth = 4;
+        this->m_vectorWidth = (m_ispc_target == ISPCTarget::avx2_i64x4) ? 4 : 8;
         this->m_maskingIsFree = false;
         this->m_maskBitCount = 64;
         this->m_hasHalfConverts = true;

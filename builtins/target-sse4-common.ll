@@ -243,7 +243,7 @@ define i32 @__max_uniform_uint32(i32, i32) nounwind readonly alwaysinline {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; switch macro
 ;; This is required to ensure that gather intrinsics are used with constant scale value.
-;; This particular implementation of the routine is used by non-avx512 targets currently(avx2-i64x4, avx2-i32x8, avx2-i32x16).
+;; This particular implementation of the routine is used by non-avx512 targets currently(avx2-i64x4, avx2-i64x8, avx2-i32x8, avx2-i32x16).
 ;; $1: Return value
 ;; $2: funcName
 ;; $3: Width
