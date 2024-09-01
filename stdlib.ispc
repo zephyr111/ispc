@@ -4112,26 +4112,166 @@ __declspec(safe) static inline uniform double atan2(uniform double y, uniform do
         return __stdlib_atan2(y, x);
 }
 
-__declspec(safe) static inline double exp(double x) {
+__declspec(safe) static inline double exp(double x_full) {
     if (__have_native_transcendentals) {
-        return __exp_varying_double(x);
+        return __exp_varying_double(x_full);
     } else if (__math_lib == __math_lib_svml) {
-        return __svml_expd(x);
-    } else {
+        return __svml_expd(x_full);
+    } else if (__math_lib == __math_lib_system) {
         double ret;
         foreach_active(i) {
-            uniform double r = __stdlib_exp(extract(x, i));
+            uniform double r = __stdlib_exp(extract(x_full, i));
             ret = insert(ret, i, r);
         }
         return ret;
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+        // See the uniform version for more information
+
+        const uniform double ln2 = 6.93147180559945309417e-01d;
+        const uniform double ln2_part1 = 6.93147180559944176004e-01d;
+        const uniform double ln2_part2 = 1.13341349276361953658e-15d;
+        const uniform double one_over_ln2 = 1.44269504088896340735d;
+
+        const double scaled = x_full * one_over_ln2;
+        const double k_real = floor(scaled);
+        const int32 k = (int32)k_real;
+
+        double x;
+
+        if(__math_lib == __math_lib_ispc_fast)
+            x = x_full - k_real * ln2;
+        else
+            x = (x_full - k_real * ln2_part1) - k_real * ln2_part2;
+
+        const uniform double one = 1.0d;
+        const uniform double c1  = 9.99999999999998556710e-1d;
+        const uniform double c2  = 5.00000000000419997370e-1d;
+        const uniform double c3  = 1.66666666646308081478e-1d;
+        const uniform double c4  = 4.16666670483938766933e-2d;
+        const uniform double c5  = 8.33332971220597865102e-3d;
+        const uniform double c6  = 1.38890853743566531144e-3d;
+        const uniform double c7  = 1.98348113991359150092e-4d;
+        const uniform double c8  = 2.49320667059595269085e-5d;
+        const uniform double c9  = 2.59834238372619170695e-6d;
+        const uniform double c10 = 3.77746727283775932625e-7d;
+
+        double result = x * c10 + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+        result = x * result + one;
+
+        if(__math_lib == __math_lib_ispc_fast)
+        {
+            const int32 fpbias = 1023;
+            const int64 biased_n = (int64)(k + fpbias) << 52;
+            const double two_to_the_n = doublebits(biased_n);
+            result *= two_to_the_n;
+        }
+        else
+        {
+            const int32 fpbias = 1023;
+            const bool subnormal = k_real <= -fpbias;
+            const bool underflow = k_real <= -(fpbias + 52);
+            const bool overflow = k_real > fpbias;
+            const double inf = doublebits(0x7ff0000000000000);
+
+            int64 biased_n = k + fpbias;
+            biased_n = subnormal ? 0x8000000000000ull >> (-biased_n) : biased_n << 52;
+            const double two_to_the_n = doublebits(biased_n);
+            result *= two_to_the_n;
+            result = underflow ? 0.0d : result;
+            result = overflow ? inf : result;
+        }
+
+        return result;
     }
 }
 
-__declspec(safe) static inline uniform double exp(uniform double x) {
+__declspec(safe) static inline uniform double exp(uniform double x_full) {
     if (__have_native_transcendentals) {
-        return __exp_uniform_double(x);
-    } else
-        return __stdlib_exp(x);
+        return __exp_uniform_double(x_full);
+    } else if (__math_lib == __math_lib_system || __math_lib == __math_lib_svml) {
+        return __stdlib_exp(x_full);
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+        // Double-precision algorithm based on the one of simple-precision
+        // Default version:
+        //  - Precision: <10 ULP for all numbers.
+        //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
+        // Fast version:
+        //  - Precision: <250 ULP for normal numbers (subnormals are truncated to zero, e.g. see exp(-708.3964233398438)).
+        //  - No support of special input values like (e.g. NaN, -Inf, +Inf).
+
+        const uniform double ln2 = 6.93147180559945309417e-01d;
+        const uniform double ln2_part1 = 6.93147180559944176004e-01d;
+        const uniform double ln2_part2 = 1.13341349276361953658e-15d;
+        const uniform double one_over_ln2 = 1.44269504088896340735d;
+
+        const uniform double scaled = x_full * one_over_ln2;
+        const uniform double k_real = floor(scaled);
+        const uniform int32 k = (uniform int32)k_real;
+
+        uniform double x;
+
+        if(__math_lib == __math_lib_ispc_fast)
+            x = x_full - k_real * ln2;
+        else
+            x = (x_full - k_real * ln2_part1) - k_real * ln2_part2;
+
+        // These coefficients (from Sollya) are for e^x in [0, ln(2)]
+        const uniform double one = 1.0d;
+        const uniform double c1  = 9.99999999999998556710e-1d;
+        const uniform double c2  = 5.00000000000419997370e-1d;
+        const uniform double c3  = 1.66666666646308081478e-1d;
+        const uniform double c4  = 4.16666670483938766933e-2d;
+        const uniform double c5  = 8.33332971220597865102e-3d;
+        const uniform double c6  = 1.38890853743566531144e-3d;
+        const uniform double c7  = 1.98348113991359150092e-4d;
+        const uniform double c8  = 2.49320667059595269085e-5d;
+        const uniform double c9  = 2.59834238372619170695e-6d;
+        const uniform double c10 = 3.77746727283775932625e-7d;
+
+        uniform double result = x * c10 + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+        result = x * result + one;
+
+        if(__math_lib == __math_lib_ispc_fast)
+        {
+            const uniform int32 fpbias = 1023;
+            const uniform int64 biased_n = (int64)(k + fpbias) << 52;
+            const uniform double two_to_the_n = doublebits(biased_n);
+            result *= two_to_the_n;
+        }
+        else
+        {
+            const uniform int32 fpbias = 1023;
+            const uniform bool subnormal = k_real <= -fpbias;
+            const uniform bool underflow = k_real <= -(fpbias + 52);
+            const uniform bool overflow = k_real > fpbias;
+            const uniform double inf = doublebits(0x7ff0000000000000);
+
+            uniform int64 biased_n = k + fpbias;
+            biased_n = subnormal ? 0x8000000000000ull >> (-biased_n) : biased_n << 52;
+            const uniform double two_to_the_n = doublebits(biased_n);
+            result *= two_to_the_n;
+            result = underflow ? 0.0d : result;
+            result = overflow ? inf : result;
+        }
+
+        return result;
+    }
 }
 
 __declspec(safe) static inline double log(double x) {
