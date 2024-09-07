@@ -4274,26 +4274,163 @@ __declspec(safe) static inline uniform double exp(uniform double x_full) {
     }
 }
 
-__declspec(safe) static inline double log(double x) {
+__declspec(safe) static inline void __range_reduce_log(double input, varying double *uniform reduced,
+                                                       varying int *uniform exponent) {
+    // See the single-precision implementation for more information
+
+    const int64 int_version = intbits(input);
+
+    const int biased_exponent = int_version >> 52;
+    const int offset_exponent = biased_exponent + 1;
+    *exponent = offset_exponent - 1023;
+
+    // double precision = SEEE EEEE EEEE MMMM MMMM MMMM MMMM MMMM [... x 32]
+    // exponent mask    = 0111 1111 1111 0000 0000 0000 0000 0000 [... x 32]
+    //                    0x7  0xF  0xF  0x0  0x0  0x0  0x0  0x0  [... x 32]
+    // non-exponent     = 1000 0000 0000 1111 1111 1111 1111 1111 [... x 32]
+    //                  = 0x8  0x0  0x0  0xF  0xF  0xF  0xF  0xF  [... x 32]
+
+    static const int64 exponent_neg1 = 1022ll << 52;
+    static const int64 nonexponent_mask = 0x800FFFFFFFFFFFFF;
+    const int64 blended = (int_version & nonexponent_mask) | exponent_neg1;
+    *reduced = doublebits(blended);
+}
+
+__declspec(safe) static inline void __range_reduce_log(uniform double input, uniform double *uniform reduced,
+                                                       uniform int *uniform exponent) {
+    const uniform int64 int_version = intbits(input);
+
+    const uniform int biased_exponent = int_version >> 52;
+    const uniform int offset_exponent = biased_exponent + 1;
+    *exponent = offset_exponent - 1023;
+
+    static const uniform int64 exponent_neg1 = 1022ll << 52;
+    static const uniform int64 nonexponent_mask = 0x800FFFFFFFFFFFFF;
+    const uniform int64 blended = (int_version & nonexponent_mask) | exponent_neg1;
+    *reduced = doublebits(blended);
+}
+
+__declspec(safe) static inline double log(double x_full) {
     if (__have_native_transcendentals) {
-        return __log_varying_double(x);
+        return __log_varying_double(x_full);
     } else if (__math_lib == __math_lib_svml) {
-        return __svml_logd(x);
-    } else {
+        return __svml_logd(x_full);
+    } else if (__math_lib == __math_lib_system) {
         double ret;
         foreach_active(i) {
-            uniform double r = __stdlib_log(extract(x, i));
+            uniform double r = __stdlib_log(extract(x_full, i));
             ret = insert(ret, i, r);
         }
         return ret;
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+        // See the uniform version for more information
+
+        // Default version:
+        //  - Precision: <10 ULP for all numbers.
+        //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
+
+        double reduced;
+        int exponent;
+
+        const int64 NaN_bits = 0x7FFFFFFFFFFFFFFF;
+        const int64 Inf_bits = 0x7FF0000000000000;
+        const double NaN = doublebits(NaN_bits);
+        const double inf = doublebits(Inf_bits);
+        const bool use_nan = !(x_full >= 0.0d);
+        const bool use_inf = x_full == 0.0d || x_full == inf;
+        const bool exceptional = use_nan || use_inf;
+        const double one = 1.0d;
+
+        // For very small number close to subnormals, we remap the function so the input
+        // is much bigger and we then correct the final result (to get precise results).
+        // This is needed because __range_reduce_log does not support subnormal numbers yet.
+        const double tiny_coef = 9.33263618503218878990e-302d;
+        const double inv_tiny_coef = 1.07150860718626732094e+301d;
+        const double tiny_shift = -6.93147180559945309417e+02d;
+        const bool tiny = x_full < tiny_coef;
+        x_full *= select(tiny, inv_tiny_coef, one);
+
+        const double patched = select(exceptional, one, x_full);
+        __range_reduce_log(patched, &reduced, &exponent);
+        
+// !!! ONLY FOR DEBUG !!!
+/*
+        const float FL_patched = patched;
+        float FL_reduced;
+        int FL_exponent;
+        __range_reduce_log(FL_patched, &FL_reduced, &FL_exponent);
+        print("                    ::::: DEBUG ::::: % => % % | % %\n", extract(x_full, 0), extract(exponent, 0), extract(reduced, 0), extract(FL_exponent, 0), extract(FL_reduced, 0));
+//*/
+// !!! ONLY FOR DEBUG !!!
+
+        // These coefficients (from Sollya) are for `log(y)/(y-1)` where `y=x+1` in [-0.16;0.12].
+        // Note that we need to perform a substitution to get a good numerical stability close to 1.
+        const double ln2 = +6.93147180559945309417e-1d;
+        const double  c1 = +1.00000000000000022204e-0d;
+        const double  c2 = -5.00000000000006217248e-1d;
+        const double  c3 = +3.33333333332494707867e-1d;
+        const double  c4 = -2.49999999991524113340e-1d;
+        const double  c5 = +2.00000000587778475891e-1d;
+        const double  c6 = -1.66666669490064783820e-1d;
+        const double  c7 = +1.42856985862571089773e-1d;
+        const double  c8 = -1.24999717910577512469e-1d;
+        const double  c9 = +1.11130667065783367286e-1d;
+        const double c10 = -9.99948796761888081263e-2d;
+        const double c11 = +8.97486483886012903488e-2d;
+        const double c12 = -8.53323635512281547521e-2d;
+        const double c13 = +1.04427697122472420976e-1d;
+
+        // TODO: recompute the polynomials and threshold so to optimize operations
+        const bool close_to_one = abs(x_full - one) < 0.05d;
+        reduced = select(close_to_one, x_full, reduced);
+        const double log_from_exponent = select(close_to_one, 0.0d, (double)exponent * ln2);
+
+        // TODO: comment this code so to make it clear (about intervals and "remapping")
+        const bool small = reduced < 0.65d;
+        const bool big = reduced > 0.84d;
+        const double small_coef = 1.7d;
+        const double mid_coef = 1.3d;
+        const double small_shift = 5.30628251062170370108e-1d;
+        const double mid_shift = 2.62364264467491086196e-1d;
+        const double coef = select(small, small_coef, select(big, one, mid_coef));
+        const double shift = select(small, small_shift, select(big, 0.0d, mid_shift));
+        reduced *= coef; // TODO: merge with `reduced - one` so to use a FMA?
+
+        const double x = reduced - one;
+        double result = c13;
+        result = x * result + c12;
+        result = x * result + c11;
+        result = x * result + c10;
+        result = x * result + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+
+        result = log_from_exponent - shift + x * result;
+
+        // Apply the correction for the tiny numbers close to subnormal values
+        // TODO: move this before for more performance?
+        result += select(tiny, tiny_shift, 0.0d);
+
+        const double exceptional_result = select(use_nan, NaN, select(x_full == inf, x_full, -inf));
+        return select(exceptional, exceptional_result, result);
     }
 }
 
-__declspec(safe) static inline uniform double log(uniform double x) {
+__declspec(safe) static inline uniform double log(uniform double x_full) {
     if (__have_native_transcendentals) {
-        return __log_uniform_double(x);
-    } else
-        return __stdlib_log(x);
+        return __log_uniform_double(x_full);
+    } else if (__math_lib == __math_lib_system) {
+        return __stdlib_log(x_full);
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+        // TODO: FIXME: use a uniform custom implementation (for better performance, especially with double-pumping)
+        return extract(log((varying double)x_full), 0);
+    }
 }
 
 __declspec(safe) static inline double pow(double a, double b) {
