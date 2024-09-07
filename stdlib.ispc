@@ -4274,15 +4274,26 @@ __declspec(safe) static inline uniform double exp(uniform double x_full) {
     }
 }
 
+// See the single-precision implementation for more information
+// This version can optionally support subnormal numbers.
+// Note that AVX-512 as a dedicated instruction for that which can be much faster.
 __declspec(safe) static inline void __range_reduce_log(double input, varying double *uniform reduced,
-                                                       varying int *uniform exponent) {
-    // See the single-precision implementation for more information
+                                                       varying int *uniform exponent, uniform bool subnormal_support) {
+    int exponent_corr = -1022;
+
+    if(subnormal_support)
+    {
+        // For very small number close to subnormals, we remap the function so the input
+        // is much bigger and we then correct the final result (to get precise results).
+        const bool tiny = input < 9.33263618503218878990e-302d;
+        input *= select(tiny, 1.07150860718626732094e+301d, 1.0d);
+        exponent_corr -= select(tiny, 1000, 0);
+    }
 
     const int64 int_version = intbits(input);
 
     const int biased_exponent = int_version >> 52;
-    const int offset_exponent = biased_exponent + 1;
-    *exponent = offset_exponent - 1023;
+    *exponent = biased_exponent + exponent_corr;
 
     // double precision = SEEE EEEE EEEE MMMM MMMM MMMM MMMM MMMM [... x 32]
     // exponent mask    = 0111 1111 1111 0000 0000 0000 0000 0000 [... x 32]
@@ -4297,12 +4308,22 @@ __declspec(safe) static inline void __range_reduce_log(double input, varying dou
 }
 
 __declspec(safe) static inline void __range_reduce_log(uniform double input, uniform double *uniform reduced,
-                                                       uniform int *uniform exponent) {
+                                                       uniform int *uniform exponent, uniform bool subnormal_support) {
+    uniform int exponent_corr = -1022;
+
+    if(subnormal_support)
+    {
+        // For very small number close to subnormals, we remap the function so the input
+        // is much bigger and we then correct the final result (to get precise results).
+        const uniform bool tiny = input < 9.33263618503218878990e-302d;
+        input *= select(tiny, 1.07150860718626732094e+301d, 1.0d);
+        exponent_corr -= select(tiny, 1000, 0);
+    }
+
     const uniform int64 int_version = intbits(input);
 
     const uniform int biased_exponent = int_version >> 52;
-    const uniform int offset_exponent = biased_exponent + 1;
-    *exponent = offset_exponent - 1023;
+    *exponent = biased_exponent + exponent_corr;
 
     static const uniform int64 exponent_neg1 = 1022ll << 52;
     static const uniform int64 nonexponent_mask = 0x800FFFFFFFFFFFFF;
@@ -4326,7 +4347,7 @@ __declspec(safe) static inline double log(double x_full) {
         // See the uniform version for more information
 
         // Default version:
-        //  - Precision: <10 ULP for all numbers.
+        //  - Precision: <5 ULP for all numbers.
         //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
 
         double reduced;
@@ -4341,51 +4362,35 @@ __declspec(safe) static inline double log(double x_full) {
         const bool exceptional = use_nan || use_inf;
         const double one = 1.0d;
 
-        // For very small number close to subnormals, we remap the function so the input
-        // is much bigger and we then correct the final result (to get precise results).
-        // This is needed because __range_reduce_log does not support subnormal numbers yet.
-        const double tiny_coef = 9.33263618503218878990e-302d;
-        const double inv_tiny_coef = 1.07150860718626732094e+301d;
-        const double tiny_shift = -6.93147180559945309417e+02d;
-        const bool tiny = x_full < tiny_coef;
-        x_full *= select(tiny, inv_tiny_coef, one);
-
         const double patched = select(exceptional, one, x_full);
-        __range_reduce_log(patched, &reduced, &exponent);
-        
-// !!! ONLY FOR DEBUG !!!
-/*
-        const float FL_patched = patched;
-        float FL_reduced;
-        int FL_exponent;
-        __range_reduce_log(FL_patched, &FL_reduced, &FL_exponent);
-        print("                    ::::: DEBUG ::::: % => % % | % %\n", extract(x_full, 0), extract(exponent, 0), extract(reduced, 0), extract(FL_exponent, 0), extract(FL_reduced, 0));
-//*/
-// !!! ONLY FOR DEBUG !!!
+        __range_reduce_log(patched, &reduced, &exponent, true);
 
-        // These coefficients (from Sollya) are for `log(y)/(y-1)` where `y=x+1` in [-0.16;0.12].
+        // These coefficients (from Sollya) are for `log(y)/(y-1)` where `y=x+1` in [-0.16;0.11].
         // Note that we need to perform a substitution to get a good numerical stability close to 1.
+        // A better relative precision close to 1 is reached by subtracting 0.5 to the expression
+        // so to force the first constant to be closer to one (sub-ULP precision) without decreasing 
+        // the precision too much for the value far from 1.
         const double ln2 = +6.93147180559945309417e-1d;
-        const double  c1 = +1.00000000000000022204e-0d;
-        const double  c2 = -5.00000000000006217248e-1d;
-        const double  c3 = +3.33333333332494707867e-1d;
-        const double  c4 = -2.49999999991524113340e-1d;
-        const double  c5 = +2.00000000587778475891e-1d;
-        const double  c6 = -1.66666669490064783820e-1d;
-        const double  c7 = +1.42856985862571089773e-1d;
-        const double  c8 = -1.24999717910577512469e-1d;
-        const double  c9 = +1.11130667065783367286e-1d;
-        const double c10 = -9.99948796761888081263e-2d;
-        const double c11 = +8.97486483886012903488e-2d;
-        const double c12 = -8.53323635512281547521e-2d;
-        const double c13 = +1.04427697122472420976e-1d;
+        const double  c1 = one;
+        const double  c2 = -5.00000000000009103828e-1d;
+        const double  c3 = +3.33333333332899106604e-1d;
+        const double  c4 = -2.49999999985906135036e-1d;
+        const double  c5 = +2.00000000341312739182e-1d;
+        const double  c6 = -1.66666672520838943238e-1d;
+        const double  c7 = +1.42857035853359320975e-1d;
+        const double  c8 = -1.24999067295449683978e-1d;
+        const double  c9 = +1.11127183903882320592e-1d;
+        const double c10 = -1.00054428804522657636e-1d;
+        const double c11 = +8.97475300792953678552e-2d;
+        const double c12 = -8.33937487576126706967e-2d;
+        const double c13 = +1.10078043488539348282e-1d;
 
-        // TODO: recompute the polynomials and threshold so to optimize operations
-        const bool close_to_one = abs(x_full - one) < 0.05d;
+        // Required for values close to one to be precise
+        const bool close_to_one = abs(x_full - one) < 0.11d;
         reduced = select(close_to_one, x_full, reduced);
         const double log_from_exponent = select(close_to_one, 0.0d, (double)exponent * ln2);
 
-        // TODO: comment this code so to make it clear (about intervals and "remapping")
+        // Range reduction: split the range in 3 part and remap the 2 first one on the last
         const bool small = reduced < 0.65d;
         const bool big = reduced > 0.84d;
         const double small_coef = 1.7d;
@@ -4394,7 +4399,7 @@ __declspec(safe) static inline double log(double x_full) {
         const double mid_shift = 2.62364264467491086196e-1d;
         const double coef = select(small, small_coef, select(big, one, mid_coef));
         const double shift = select(small, small_shift, select(big, 0.0d, mid_shift));
-        reduced *= coef; // TODO: merge with `reduced - one` so to use a FMA?
+        reduced *= coef;
 
         const double x = reduced - one;
         double result = c13;
@@ -4412,10 +4417,6 @@ __declspec(safe) static inline double log(double x_full) {
         result = x * result + c1;
 
         result = log_from_exponent - shift + x * result;
-
-        // Apply the correction for the tiny numbers close to subnormal values
-        // TODO: move this before for more performance?
-        result += select(tiny, tiny_shift, 0.0d);
 
         const double exceptional_result = select(use_nan, NaN, select(x_full == inf, x_full, -inf));
         return select(exceptional, exceptional_result, result);
