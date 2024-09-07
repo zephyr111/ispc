@@ -4346,51 +4346,40 @@ __declspec(safe) static inline double log(double x_full) {
     } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
         // See the uniform version for more information
 
-        // Default version:
-        //  - Precision: <5 ULP for all numbers.
-        //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
-
         double reduced;
         int exponent;
 
-        const int64 NaN_bits = 0x7FFFFFFFFFFFFFFF;
-        const int64 Inf_bits = 0x7FF0000000000000;
-        const double NaN = doublebits(NaN_bits);
-        const double inf = doublebits(Inf_bits);
+        const uniform int64 NaN_bits = 0x7FFFFFFFFFFFFFFF;
+        const uniform int64 Inf_bits = 0x7FF0000000000000;
+        const uniform double NaN = doublebits(NaN_bits);
+        const uniform double inf = doublebits(Inf_bits);
         const bool use_nan = !(x_full >= 0.0d);
         const bool use_inf = x_full == 0.0d || x_full == inf;
         const bool exceptional = use_nan || use_inf;
-        const double one = 1.0d;
+        const uniform double one = 1.0d;
 
         const double patched = select(exceptional, one, x_full);
         __range_reduce_log(patched, &reduced, &exponent, true);
 
-        // These coefficients (from Sollya) are for `log(y)/(y-1)` where `y=x+1` in [-0.16;0.11].
-        // Note that we need to perform a substitution to get a good numerical stability close to 1.
-        // A better relative precision close to 1 is reached by subtracting 0.5 to the expression
-        // so to force the first constant to be closer to one (sub-ULP precision) without decreasing 
-        // the precision too much for the value far from 1.
-        const double ln2 = +6.93147180559945309417e-1d;
-        const double  c1 = one;
-        const double  c2 = -5.00000000000009103828e-1d;
-        const double  c3 = +3.33333333332899106604e-1d;
-        const double  c4 = -2.49999999985906135036e-1d;
-        const double  c5 = +2.00000000341312739182e-1d;
-        const double  c6 = -1.66666672520838943238e-1d;
-        const double  c7 = +1.42857035853359320975e-1d;
-        const double  c8 = -1.24999067295449683978e-1d;
-        const double  c9 = +1.11127183903882320592e-1d;
-        const double c10 = -1.00054428804522657636e-1d;
-        const double c11 = +8.97475300792953678552e-2d;
-        const double c12 = -8.33937487576126706967e-2d;
-        const double c13 = +1.10078043488539348282e-1d;
+        const uniform double ln2 = +6.93147180559945309417e-1d;
+        const uniform double  c1 = one;
+        const uniform double  c2 = -5.00000000000009103828e-1d;
+        const uniform double  c3 = +3.33333333332899106604e-1d;
+        const uniform double  c4 = -2.49999999985906135036e-1d;
+        const uniform double  c5 = +2.00000000341312739182e-1d;
+        const uniform double  c6 = -1.66666672520838943238e-1d;
+        const uniform double  c7 = +1.42857035853359320975e-1d;
+        const uniform double  c8 = -1.24999067295449683978e-1d;
+        const uniform double  c9 = +1.11127183903882320592e-1d;
+        const uniform double c10 = -1.00054428804522657636e-1d;
+        const uniform double c11 = +8.97475300792953678552e-2d;
+        const uniform double c12 = -8.33937487576126706967e-2d;
+        const uniform double c13 = +1.10078043488539348282e-1d;
 
-        // Required for values close to one to be precise
         const bool close_to_one = abs(x_full - one) < 0.11d;
         reduced = select(close_to_one, x_full, reduced);
         const double log_from_exponent = select(close_to_one, 0.0d, (double)exponent * ln2);
 
-        // Range reduction: split the range in 3 part and remap the 2 first one on the last
         const bool small = reduced < 0.65d;
         const bool big = reduced > 0.84d;
         const double small_coef = 1.7d;
@@ -4429,8 +4418,80 @@ __declspec(safe) static inline uniform double log(uniform double x_full) {
     } else if (__math_lib == __math_lib_system) {
         return __stdlib_log(x_full);
     } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
-        // TODO: FIXME: use a uniform custom implementation (for better performance, especially with double-pumping)
-        return extract(log((varying double)x_full), 0);
+        // Default version:
+        //  - Precision: <5 ULP for all numbers.
+        //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
+
+        uniform double reduced;
+        uniform int exponent;
+
+        const uniform int64 NaN_bits = 0x7FFFFFFFFFFFFFFF;
+        const uniform int64 Inf_bits = 0x7FF0000000000000;
+        const uniform double NaN = doublebits(NaN_bits);
+        const uniform double inf = doublebits(Inf_bits);
+        const uniform bool use_nan = !(x_full >= 0.0d);
+        const uniform bool use_inf = x_full == 0.0d || x_full == inf;
+        const uniform bool exceptional = use_nan || use_inf;
+        const uniform double one = 1.0d;
+
+        const uniform double patched = select(exceptional, one, x_full);
+        __range_reduce_log(patched, &reduced, &exponent, true);
+
+        // These coefficients (from Sollya) are for `log(y)/(y-1)` where `y=x+1` in [-0.16;0.11].
+        // Note that we need to perform a substitution to get a good numerical stability close to 1.
+        // A better relative precision close to 1 is reached by subtracting 0.5 to the expression
+        // so to force the first constant to be closer to one (sub-ULP precision) without decreasing 
+        // the precision too much for the value far from 1.
+        const uniform double ln2 = +6.93147180559945309417e-1d;
+        const uniform double  c1 = one;
+        const uniform double  c2 = -5.00000000000009103828e-1d;
+        const uniform double  c3 = +3.33333333332899106604e-1d;
+        const uniform double  c4 = -2.49999999985906135036e-1d;
+        const uniform double  c5 = +2.00000000341312739182e-1d;
+        const uniform double  c6 = -1.66666672520838943238e-1d;
+        const uniform double  c7 = +1.42857035853359320975e-1d;
+        const uniform double  c8 = -1.24999067295449683978e-1d;
+        const uniform double  c9 = +1.11127183903882320592e-1d;
+        const uniform double c10 = -1.00054428804522657636e-1d;
+        const uniform double c11 = +8.97475300792953678552e-2d;
+        const uniform double c12 = -8.33937487576126706967e-2d;
+        const uniform double c13 = +1.10078043488539348282e-1d;
+
+        // Required for values close to one to be precise
+        const uniform bool close_to_one = abs(x_full - one) < 0.11d;
+        reduced = select(close_to_one, x_full, reduced);
+        const uniform double log_from_exponent = select(close_to_one, 0.0d, (uniform double)exponent * ln2);
+
+        // Range reduction: split the range in 3 part and remap the 2 first one on the last
+        const uniform bool small = reduced < 0.65d;
+        const uniform bool big = reduced > 0.84d;
+        const uniform double small_coef = 1.7d;
+        const uniform double mid_coef = 1.3d;
+        const uniform double small_shift = 5.30628251062170370108e-1d;
+        const uniform double mid_shift = 2.62364264467491086196e-1d;
+        const uniform double coef = select(small, small_coef, select(big, one, mid_coef));
+        const uniform double shift = select(small, small_shift, select(big, 0.0d, mid_shift));
+        reduced *= coef;
+
+        const uniform double x = reduced - one;
+        uniform double result = c13;
+        result = x * result + c12;
+        result = x * result + c11;
+        result = x * result + c10;
+        result = x * result + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+
+        result = log_from_exponent - shift + x * result;
+
+        const uniform double exceptional_result = select(use_nan, NaN, select(x_full == inf, x_full, -inf));
+        return select(exceptional, exceptional_result, result);
     }
 }
 
