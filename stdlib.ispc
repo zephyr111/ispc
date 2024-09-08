@@ -4604,21 +4604,26 @@ __declspec(safe) static inline double pow(double a, double b) {
         return __pow_varying_double(a, b);
     } else if (__math_lib == __math_lib_svml) {
         return __svml_powd(a, b);
-    } else {
+    } else if (__math_lib == __math_lib_system) {
         double ret;
         foreach_active(i) {
             uniform double r = __stdlib_pow(extract(a, i), extract(b, i));
             ret = insert(ret, i, r);
         }
         return ret;
+    } else if (__math_lib == __math_lib_ispc || __math_lib == __math_lib_ispc_fast) {
+        return exp(b * log(a));
     }
 }
 
 __declspec(safe) static inline uniform double pow(uniform double a, uniform double b) {
     if (__have_native_transcendentals) {
         return __pow_uniform_double(a, b);
-    } else
+    } else if (__math_lib == __math_lib_system) {
         return __stdlib_pow(a, b);
+    } else if (__math_lib == __math_lib_ispc || __math_lib == __math_lib_ispc_fast) {
+        return exp(b * log(a));
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////
