@@ -4343,7 +4343,58 @@ __declspec(safe) static inline double log(double x_full) {
             ret = insert(ret, i, r);
         }
         return ret;
-    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+    } else if (__math_lib == __math_lib_ispc_fast) {
+        // See the uniform version for more information
+
+        const uniform double one = 1.0d;
+        const uniform double ln2 = +6.93147180559945309417e-1d;
+        const uniform double  c1 = +1.00000000000000770050e-0d;
+        const uniform double  c2 = -5.00000000000602851102e-1d;
+        const uniform double  c3 = +3.33333333298237610708e-1d;
+        const uniform double  c4 = -2.49999999365494635084e-1d;
+        const uniform double  c5 = +2.00000028953900843564e-1d;
+        const uniform double  c6 = -1.66666696986255497003e-1d;
+        const uniform double  c7 = +1.42849418436873709659e-1d;
+        const uniform double  c8 = -1.25060700982013772719e-1d;
+        const uniform double  c9 = +1.11503689616767889813e-1d;
+        const uniform double c10 = -9.14307577133625232201e-2d;
+        const uniform double c11 = +1.45849267315092318009e-1d;
+        const uniform double c12 = +8.74125344996221215199e-2d;
+        const uniform double c13 = +3.19383926162282172356e-1d;
+
+        double reduced;
+        int exponent;
+
+        __range_reduce_log(x_full, &reduced, &exponent, false);
+
+        const bool close_to_one = abs(x_full - one) < 0.07d;
+        reduced = select(close_to_one, x_full, reduced);
+        const double log_from_exponent = select(close_to_one, 0.0d, (double)exponent * ln2);
+
+        const bool small = reduced < 0.731d;
+        const double small_coef = 1.464d;
+        const double small_shift = 3.81172415539119794503e-1d;
+        const double coef = select(small, small_coef, one);
+        const double shift = select(small, small_shift, 0.0d);
+        reduced *= coef;
+
+        const double x = reduced - one;
+        double result = c13;
+        result = x * result + c12;
+        result = x * result + c11;
+        result = x * result + c10;
+        result = x * result + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+
+        return log_from_exponent - shift + x * result;
+    } else if (__math_lib == __math_lib_ispc) {
         // See the uniform version for more information
 
         double reduced;
@@ -4417,7 +4468,60 @@ __declspec(safe) static inline uniform double log(uniform double x_full) {
         return __log_uniform_double(x_full);
     } else if (__math_lib == __math_lib_system) {
         return __stdlib_log(x_full);
-    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+    } else if (__math_lib == __math_lib_ispc_fast) {
+        // Default version:
+        //  - Precision: <150 ULP for normal numbers.
+        //  - Do not support special input values (eg. NaN, Inf, negative values, subnormal numbers, and 0).
+
+        const uniform double one = 1.0d;
+        const uniform double ln2 = +6.93147180559945309417e-1d;
+        const uniform double  c1 = +1.00000000000000770050e-0d;
+        const uniform double  c2 = -5.00000000000602851102e-1d;
+        const uniform double  c3 = +3.33333333298237610708e-1d;
+        const uniform double  c4 = -2.49999999365494635084e-1d;
+        const uniform double  c5 = +2.00000028953900843564e-1d;
+        const uniform double  c6 = -1.66666696986255497003e-1d;
+        const uniform double  c7 = +1.42849418436873709659e-1d;
+        const uniform double  c8 = -1.25060700982013772719e-1d;
+        const uniform double  c9 = +1.11503689616767889813e-1d;
+        const uniform double c10 = -9.14307577133625232201e-2d;
+        const uniform double c11 = +1.45849267315092318009e-1d;
+        const uniform double c12 = +8.74125344996221215199e-2d;
+        const uniform double c13 = +3.19383926162282172356e-1d;
+
+        uniform double reduced;
+        uniform int exponent;
+
+        __range_reduce_log(x_full, &reduced, &exponent, false);
+
+        const uniform bool close_to_one = abs(x_full - one) < 0.07d;
+        reduced = select(close_to_one, x_full, reduced);
+        const uniform double log_from_exponent = select(close_to_one, 0.0d, (uniform double)exponent * ln2);
+
+        const uniform bool small = reduced < 0.731d;
+        const uniform double small_coef = 1.464d;
+        const uniform double small_shift = 3.81172415539119794503e-1d;
+        const uniform double coef = select(small, small_coef, one);
+        const uniform double shift = select(small, small_shift, 0.0d);
+        reduced *= coef;
+
+        const uniform double x = reduced - one;
+        uniform double result = c13;
+        result = x * result + c12;
+        result = x * result + c11;
+        result = x * result + c10;
+        result = x * result + c9;
+        result = x * result + c8;
+        result = x * result + c7;
+        result = x * result + c6;
+        result = x * result + c5;
+        result = x * result + c4;
+        result = x * result + c3;
+        result = x * result + c2;
+        result = x * result + c1;
+
+        return log_from_exponent - shift + x * result;
+    } else if (__math_lib == __math_lib_ispc) {
         // Default version:
         //  - Precision: <5 ULP for all numbers.
         //  - Support special input values like NaN, -Inf, +Inf and subnormal numbers correctly.
