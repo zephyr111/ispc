@@ -3521,6 +3521,73 @@ __declspec(safe) static inline uniform float sin(uniform float x_full) {
     }
 }
 
+// TODO: write the version with uniform (use templates shared function?)
+// The precision should theoretically be < 10 ULP. Untested in practice.
+__declspec(safe) static inline double sin(double x_full) {
+    if (__have_native_trigonometry) {
+        return __sin_varying_double(x_full);
+    } else if (__math_lib == __math_lib_svml) {
+        return __svml_sin(x_full);
+    } else if (__math_lib == __math_lib_system) {
+        double ret;
+        foreach_active(i) {
+            uniform double r = __stdlib_sin(extract(x_full, i));
+            ret = insert(ret, i, r);
+        }
+        return ret;
+    } else if (__math_lib == __math_lib_ispc || __math_lib == __math_lib_ispc_fast) {
+        static const double one_over_pi = 3.18309886183790671537e-1d;
+        static const double pi = 3.14159265358979323846d;
+        static const double pi_corr = 1.22464679914735317722e-16d;
+
+        // TODO: check +/- inf inputs which should correctly return NaN (like C functions)
+
+        // Accurate div/mod
+        // Note that the cast may overflow/underflow on huge inputs, but
+        // this should be fine since it is only use for determining the sign.
+        const double scaled = x_full * one_over_pi;
+        const double k_real = round(scaled);
+        const int64 k = (int64)k_real;
+        const bool flip_sign = (k & 1) != 0;
+
+        // Accurate reduced range version of x (using double-double precision for pi)
+        // WARNING: may result in a value outside the range with really huge values
+        //          (resulting in garbadge result anyway even with a perfect function, 
+        //          but may results in output outside [-1;1] which might be an issue).
+        //          A clamp can be used here to fix this issue.
+        const double x = x_full - k_real * pi - k_real * pi_corr;
+
+        // TODO: adapt the single-precision functions so to get a more accurate result or even a faster implem? 
+        // "fpminimax(sin(x), [|1,3,5,7,9|], [|single...|], [-pi/2;pi/2]);"
+
+        // These coefficients are from sollya with fpminimax(sin(x), [|1,3,5,7,9,11,13,15|], [|double...|], [-pi/2;-1e-400]);
+        // the range is not [-pi/2;-pi/2] because the algorithm fails in 0 (but is actually valid by continuity), 
+        // and we know that the function is symetric anyway.
+        static const double c0 =  1.0d;
+        static const double c2 =  -1.66666666666660107098e-1d;
+        static const double c4 =  +8.33333333327784288313e-3d;
+        static const double c6 =  -1.98412698235830153989e-4d;
+        static const double c8 =  +2.75573164561690770618e-6d;
+        static const double c10 = -2.50518726968963479135e-8d;
+        static const double c12 = +1.60478927890415654811e-10d;
+        static const double c14 = -7.37117549561638898629e-13d;
+
+        const double x2 = x * x;
+        double formula = c14;
+        formula = x2 * formula + c12;
+        formula = x2 * formula + c10;
+        formula = x2 * formula + c8;
+        formula = x2 * formula + c6;
+        formula = x2 * formula + c4;
+        formula = x2 * formula + c2;
+        formula = x2 * formula + c0;
+        formula *= x;
+
+        formula = flip_sign ? -formula : formula;
+        return formula;
+    }
+}
+
 __declspec(safe) static inline float asin(float x0) {
     bool isneg = x0 < 0;
     float x = abs(x0);
