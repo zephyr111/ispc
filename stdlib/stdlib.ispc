@@ -4007,6 +4007,117 @@ __declspec(safe) static inline uniform float tan(uniform float x_full) {
     }
 }
 
+// The error should be < 5 ULP.
+__declspec(safe) static inline double tan(double x_full) {
+    if (__have_native_trigonometry) {
+        return __tan_varying_double(x_full);
+    } else if (__math_lib == __math_lib_svml) {
+        return __svml_tanf(x_full);
+    } else if (__math_lib == __math_lib_system) {
+        double ret;
+        foreach_active(i) {
+            uniform double r = __stdlib_tanf(extract(x_full, i));
+            ret = insert(ret, i, r);
+        }
+        return ret;
+    } else if (__math_lib == __math_lib_ispc || __math_lib == __math_lib_ispc_fast) {
+        static const double pi_over_four_vec = 0.785398185253143310546875d;
+        static const double four_over_pi_vec = 1.27323949337005615234375d;
+
+        // TODO: check +/- inf inputs which should correctly return NaN (like C functions)
+
+        const bool x_lt_0 = x_full < 0.0d;
+        const double y = x_lt_0 ? -x_full : x_full;
+        const double scaled = y * four_over_pi_vec;
+
+        // WARNING: floor does not return an integer for huge numbers
+        const double k_real = floor(scaled);
+        const int64 k = (int64)k_real; // WARNING: possible overflow
+
+        // WARNING: not accurate for huge numbers (even with double-double precision)
+        double x = y - k_real * pi_over_four_vec;
+
+        // if k & 1, x -= Pi/4
+        const bool need_offset = (k & 1) != 0;
+        x = need_offset ? x - pi_over_four_vec : x;
+
+        // if k & 3 == (0 or 3) let z = tan_In...(y) otherwise z = -cot_In0To...
+        const int64 k_mod4 = k & 3;
+        const bool use_cotan = (k_mod4 == 1) || (k_mod4 == 2);
+
+        static const double one_vec = 1.0d;
+
+        // sollya
+        // fpminimax(tan(x)/x, [|2,4,6,8,10,12,14,16,18,20,22,24,26|], [|double...|], [1e-400;pi/4], relative, floating, 1);
+        static const double tan_c2 =  +3.33333333333400594344e-1d;
+        static const double tan_c4 =  +1.33333333324768432692e-1d;
+        static const double tan_c6 =  +5.39682543486730073589e-2d;
+        static const double tan_c8 =  +2.18694800484750019597e-2d;
+        static const double tan_c10 = +8.86334686329741730514e-3d;
+        static const double tan_c12 = +3.59119354023935272168e-3d;
+        static const double tan_c14 = +1.46110375220946989670e-3d;
+        static const double tan_c16 = +5.69540522378683710703e-4d;
+        static const double tan_c18 = +2.94516853565523041916e-4d;
+        static const double tan_c20 = -6.26256126381864862038e-6d;
+        static const double tan_c22 = +1.67428495221305596776e-4d;
+        static const double tan_c24 = -8.23953067601919549294e-5d;
+        static const double tan_c26 = +4.47683851089116001745e-5d;
+
+        // sollya
+        // cot = sqrt(1/(sin(x)^2)-1);
+        // fpminimax(x*cot(x), [|2,4,6,8,10,12,14,16,18|], [|double...|], [1e-400;pi/4], relative, floating, 1);
+        static const double cot_c2 =  -3.33333333333334536074e-1d;
+        static const double cot_c4 =  -2.22222222221464017766e-2d;
+        static const double cot_c6 =  -2.11640211805681028797e-3d;
+        static const double cot_c8 =  -2.11640193893277030580e-4d;
+        static const double cot_c10 = -2.13779068821918860978e-5d;
+        static const double cot_c12 = -2.16400992780767139196e-6d;
+        static const double cot_c14 = -2.20144824706839717247e-7d;
+        static const double cot_c16 = -2.10297567836128363338e-8d;
+        static const double cot_c18 = -3.10181366432382674375e-9d;
+
+        const double x2 = x * x;
+        double z;
+
+        cif(use_cotan) {
+            double cot_val = cot_c18;
+            cot_val = x2 * cot_val + cot_c16;
+            cot_val = x2 * cot_val + cot_c14;
+            cot_val = x2 * cot_val + cot_c12;
+            cot_val = x2 * cot_val + cot_c10;
+            cot_val = x2 * cot_val + cot_c8;
+            cot_val = x2 * cot_val + cot_c6;
+            cot_val = x2 * cot_val + cot_c4;
+            cot_val = x2 * cot_val + cot_c2;
+            cot_val = x2 * cot_val + one_vec;
+            // The equation is for x * cot(x) but we need -x * cot(x) for the tan part.
+            cot_val /= -x;
+            z = cot_val;
+        }
+        else {
+            double tan_val = tan_c26;
+            tan_val = x2 * tan_val + tan_c24;
+            tan_val = x2 * tan_val + tan_c22;
+            tan_val = x2 * tan_val + tan_c20;
+            tan_val = x2 * tan_val + tan_c18;
+            tan_val = x2 * tan_val + tan_c16;
+            tan_val = x2 * tan_val + tan_c14;
+            tan_val = x2 * tan_val + tan_c12;
+            tan_val = x2 * tan_val + tan_c10;
+            tan_val = x2 * tan_val + tan_c8;
+            tan_val = x2 * tan_val + tan_c6;
+            tan_val = x2 * tan_val + tan_c4;
+            tan_val = x2 * tan_val + tan_c2;
+            tan_val = x2 * tan_val + one_vec;
+            // Equation was for tan(x)/x
+            tan_val *= x;
+            z = tan_val;
+        }
+
+        return x_lt_0 ? -z : z;
+    }
+}
+
 __declspec(safe) static inline float atan(float x_full) {
     if (__have_native_trigonometry && !__is_xe_target) {
         return __atan_varying_float(x_full);
