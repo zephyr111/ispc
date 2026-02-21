@@ -4359,6 +4359,44 @@ __declspec(safe) static inline void __range_reduce_log(uniform float input, unif
     *reduced = floatbits(blended);
 }
 
+// See the single-precision version for more information
+__declspec(safe) static inline void __range_reduce_log(double input, varying double *uniform reduced,
+                                                       varying int *uniform exponent) {
+    // double precision = SEEE EEEE EEEE MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM MMMM
+    // exponent mask    = 0111 1111 1111 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000
+    //                    0x7  0xF  0xF  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0  0x0
+    // non-exponent     = 1000 0000 0000 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111 1111
+    //                  = 0x8  0x0  0x0  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF  0xF
+
+    static const int64 nonexponent_mask = 0x800FFFFFFFFFFFFF;
+    static const int64 exponent_neg1 = (1022ll << 52);
+
+    int64 int_version = intbits(input);
+
+    int biased_exponent = int_version >> 52;
+    int offset_exponent = biased_exponent + 1;
+    *exponent = offset_exponent - 1023;
+
+    int64 blended = (int_version & nonexponent_mask) | (exponent_neg1);
+    *reduced = doublebits(blended);
+}
+
+// See the single-precision version for more information
+__declspec(safe) static inline void __range_reduce_log(uniform double input, uniform double *uniform reduced,
+                                                       uniform int *uniform exponent) {
+    static const uniform int64 nonexponent_mask = 0x800FFFFFFFFFFFFF;
+    static const uniform int64 exponent_neg1 = (1022ull << 52);
+
+    uniform int64 int_version = intbits(input);
+
+    uniform int biased_exponent = int_version >> 23;
+    uniform int offset_exponent = biased_exponent + 1;
+    *exponent = offset_exponent - 1023;
+
+    uniform int64 blended = (int_version & nonexponent_mask) | (exponent_neg1);
+    *reduced = doublebits(blended);
+}
+
 __declspec(safe) static inline float log(float x_full) {
     if (__have_native_transcendentals) {
         return __log_varying_float(x_full);
@@ -4529,6 +4567,105 @@ __declspec(safe) static inline uniform float log(uniform float x_full) {
         return exceptional ? (use_nan ? NaN : neg_inf) : result;
     }
 }
+
+// Precision: should be <=5 ULP for normal numbers (to be tested) on the range [0.5;1.0]
+// WARNING: note there is a numerical stability issue in the initial log function close to 1.0 (like [1.0;1.25]).
+//          The pull request 2937 need to be applied on this implementation to fix the issue.
+__declspec(safe) static inline double log(double x_full) {
+    if (__have_native_transcendentals) {
+        return __log_varying_double(x_full);
+    } else if (__math_lib == __math_lib_svml) {
+        return __svml_log(x_full);
+    } else if (__math_lib == __math_lib_system) {
+        double ret;
+        foreach_active(i) {
+            uniform double r = __stdlib_log(extract(x_full, i));
+            ret = insert(ret, i, r);
+        }
+        return ret;
+    } else {
+        double reduced;
+        int exponent;
+
+        const int64 NaN_bits = 0x7FF0000000000000;
+        const int64 Neg_Inf_bits = 0xFFF0000000000000;
+        const double NaN = doublebits(NaN_bits);
+        const double neg_inf = doublebits(Neg_Inf_bits);
+        bool use_nan = x_full < 0.0d;
+        bool use_inf = x_full == 0.0d;
+        bool exceptional = use_nan || use_inf;
+        const double one = 1.0;
+
+        double patched = exceptional ? one : x_full;
+        __range_reduce_log(patched, &reduced, &exponent);
+
+        const double ln2 = 6.93147182464599609375e-1d;
+
+        // sollya:
+        // red = 1-x; fpminimax(-(log(red)/(1-red)), [|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18|], [|double...|], [1e-400;0.5], relative, floating, 1);
+        const double c1 =  +4.99999999999769906278e-1d;
+        const double c2 =  +3.33333333399378539674e-1d;
+        const double c3 =  +2.49999993336351339356e-1d;
+        const double c4 =  +2.00000342146823190114e-1d;
+        const double c5 =  +1.66656140396867435971e-1d;
+        const double c6 =  +1.43069874625714132942e-1d;
+        const double c7 =  +1.22008174199589480846e-1d;
+        const double c8 =  +1.41527483360835149017e-1d;
+        const double c9 =  -1.29258250809103192313e-1d;
+        const double c10 = +1.39271733281892351463e+0d;
+        const double c11 = -5.53307922642448968275e+0d;
+        const double c12 = +1.85149524332123185388e+1d;
+        const double c13 = -4.57129206355973565223e+1d;
+        const double c14 = +8.47504074138148126849e+1d;
+        const double c15 = -1.13260339619004795963e+2d;
+        const double c16 = +1.04097315222423830505e+2d;
+        const double c17 = -5.89284662431636476753e+1d;
+        const double c18 = +1.58311868176829353416e+1d;
+
+        const double x1 = one - reduced;
+        const double x2 = x1 * x1;
+
+        double result = c18;
+        result = x2 * result + (x1 * c17 + c16);
+        result = x2 * result + (x1 * c15 + c14);
+        result = x2 * result + (x1 * c13 + c12);
+        result = x2 * result + (x1 * c11 + c10);
+        result = x2 * result + (x1 * c9 + c8);
+        result = x2 * result + (x1 * c7 + c6);
+        result = x2 * result + (x1 * c5 + c4);
+        result = x2 * result + (x1 * c3 + c2);
+        result = x2 * result + (x1 * c1 + one);
+
+        // TODO: check the horner scheme is as precise as the above and compare the perf (througput+latency)
+        /*double result = c18;
+        result = x1 * result + c17;
+        result = x1 * result + c16;
+        result = x1 * result + c15;
+        result = x1 * result + c14;
+        result = x1 * result + c13;
+        result = x1 * result + c12;
+        result = x1 * result + c11;
+        result = x1 * result + c10;
+        result = x1 * result + c9;
+        result = x1 * result + c8;
+        result = x1 * result + c7;
+        result = x1 * result + c6;
+        result = x1 * result + c5;
+        result = x1 * result + c4;
+        result = x1 * result + c3;
+        result = x1 * result + c2;
+        result = x1 * result + c1;
+        result = x1 * result + one;*/
+
+        // Equation was for -(ln(red)/(1-red))
+        result *= -x1;
+        result += (double)(exponent) * ln2;
+
+        return exceptional ? (use_nan ? NaN : neg_inf) : result;
+    }
+}
+
+// TODO: implement the uniform version
 
 __declspec(safe) static inline float pow(float a, float b) {
     if (__have_native_transcendentals) {
