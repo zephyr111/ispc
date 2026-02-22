@@ -4571,6 +4571,9 @@ __declspec(safe) static inline uniform float log(uniform float x_full) {
 // Precision: should be <=5 ULP for normal numbers (to be tested) on the range [0.5;1.0]
 // WARNING: note there is a numerical stability issue in the initial log function close to 1.0 (like [1.0;1.25]).
 //          The pull request 2937 need to be applied on this implementation to fix the issue.
+//          The subnormal issue certainly need to be addressed too. 
+//          This can be fixed with a selective pre-mult (e.g. 2**50) of subnormal numbers in __range_reduce_log
+//          followed by a selective exponent correction (i.e. -50 for a 2**50 pre-mult)
 __declspec(safe) static inline double log(double x_full) {
     if (__have_native_transcendentals) {
         return __log_varying_double(x_full);
@@ -4600,6 +4603,45 @@ __declspec(safe) static inline double log(double x_full) {
         __range_reduce_log(patched, &reduced, &exponent);
 
         const double ln2 = 6.93147182464599609375e-1d;
+
+        // TODO: here is the sollya so to fix the problem mentionned in the PR 2937 (extended range: [0.5;1.21]):
+        // red = 1-x; fpminimax(-(log(red)/(1-red)), [|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21|], [|double...|], [-0.21;0.5], relative, floating, 1);
+        /*const double c1 =  +5.00000000000000111022e-1d;
+        const double c2 =  +3.33333333333651560259e-1d;
+        const double c3 =  +2.49999999999627547930e-1d;
+        const double c4 =  +1.99999999854913568242e-1d;
+        const double c5 =  +1.66666667012298375105e-1d;
+        const double c6 =  +1.42857165131921370893e-1d;
+        const double c7 =  +1.24999917417664724306e-1d;
+        const double c8 =  +1.11109547767342206614e-1d;
+        const double c9 =  +1.00008218948338820086e-1d;
+        const double c10 = +9.09605340429109066047e-2d;
+        const double c11 = +8.29306610270909155824e-2d;
+        const double c12 = +7.64402436828197917595e-2d;
+        const double c13 = +8.13274022028379062199e-2d;
+        const double c14 = +5.17338626085934935594e-2d;
+        const double c15 = -3.88438112119547859779e-2d;
+        const double c16 = +4.64351578945747467397e-1d;
+        const double c17 = -5.08234139682203905907e-2d;
+        const double c18 = -2.35607562637633849433e+0d;
+        const double c19 = +6.39140619402332532672e+0d;
+        const double c20 = -7.00045666836661961696e+0d;
+        const double c21 = +3.20985695811487969919e+0d;
+
+        const double x1 = one - reduced;
+        const double x2 = x1 * x1;
+
+        double result = x1 * c21 + c20;
+        result = x2 * result + (x1 * c19 + c18);
+        result = x2 * result + (x1 * c17 + c16);
+        result = x2 * result + (x1 * c15 + c14);
+        result = x2 * result + (x1 * c13 + c12);
+        result = x2 * result + (x1 * c11 + c10);
+        result = x2 * result + (x1 * c9 + c8);
+        result = x2 * result + (x1 * c7 + c6);
+        result = x2 * result + (x1 * c5 + c4);
+        result = x2 * result + (x1 * c3 + c2);
+        result = x2 * result + (x1 * c1 + one);*/
 
         // sollya:
         // red = 1-x; fpminimax(-(log(red)/(1-red)), [|1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18|], [|double...|], [1e-400;0.5], relative, floating, 1);
