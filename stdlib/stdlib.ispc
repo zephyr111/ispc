@@ -5439,6 +5439,264 @@ __declspec(safe) static inline float erfc(float x_full) {
     }
 }
 
+__declspec(safe) static inline uniform float lgamma(uniform float x_full) {
+    if (__math_lib == __math_lib_system || __math_lib == __math_lib_svml) {
+        return __stdlib_lgammaf(x_full);
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+
+        // Precision: <5 ULP
+
+        const uniform float pinf = floatbits(0x7F800000);
+
+        if(x_full < 3.7)
+        {
+            if(x_full <= 0.0)
+                return pinf;
+
+            // For recurence relations in ]0.0;0.69[ and ]2.7;3.7[
+            uniform float x = x_full;
+            x = select(x_full < 0.69, x_full + 1.0, x);
+            x = select(x_full > 2.70, x_full - 1.0, x);
+
+            // Three polynomials are used to compute accurately the lgamma
+            // function close to x=1.0, x=1.4, and x=2.0. The former and the
+            // later are required to get a good relative precision since
+            // lgamma is 0 in x=1 and x=2.
+            // Coefficients are optimized with Sollya from taylor series.
+
+            if(x < 1.25)
+            {
+                // Euler–Mascheroni constant
+                const uniform float gamma = 0.57721566490;
+
+                const uniform float l2 = +8.2246694996e-01;
+                const uniform float l3 = -4.0068203426e-01;
+                const uniform float l4 = +2.7059456583e-01;
+                const uniform float l5 = -2.0768109611e-01;
+                const uniform float l6 = +1.6884036741e-01;
+                const uniform float l7 = -1.3655139493e-01;
+                const uniform float l8 = +1.4031064817e-01;
+                const uniform float l9 = -1.7640815428e-01;
+
+                uniform float x_l = x - 1.0;
+
+                uniform float poly_l = l9;
+                poly_l = poly_l * x_l + l8;
+                poly_l = poly_l * x_l + l7;
+                poly_l = poly_l * x_l + l6;
+                poly_l = poly_l * x_l + l5;
+                poly_l = poly_l * x_l + l4;
+                poly_l = poly_l * x_l + l3;
+                poly_l = poly_l * x_l + l2;
+                poly_l = poly_l * x_l - gamma;
+                poly_l = poly_l * x_l;
+            }
+            else if(x < 1.67)
+            {
+                const uniform float m0 = -1.1961291131e-01;
+                const uniform float m1 = -6.1384510073e-02;
+                const uniform float m2 = +5.1267652072e-01;
+                const uniform float m3 = -1.6485886359e-01;
+                const uniform float m4 = +7.6018368792e-02;
+                const uniform float m5 = -4.0524224926e-02;
+                const uniform float m6 = +1.8730974695e-02;
+
+                uniform float x_m = x - 1.4;
+
+                uniform float poly_m = m6;
+                poly_m = poly_m * x_m + m5;
+                poly_m = poly_m * x_m + m4;
+                poly_m = poly_m * x_m + m3;
+                poly_m = poly_m * x_m + m2;
+                poly_m = poly_m * x_m + m1;
+                poly_m = poly_m * x_m + m0;
+            }
+            else
+            {
+                const uniform float r1 = +4.2278433483e-01;
+                const uniform float r2 = +3.2246704538e-01;
+                const uniform float r3 = -6.7351615452e-02;
+                const uniform float r4 = +2.0579459506e-02;
+                const uniform float r5 = -7.3995308791e-03;
+                const uniform float r6 = +2.9259083277e-03;
+                const uniform float r7 = -1.1453369262e-03;
+                const uniform float r8 = +2.9271601721e-04;
+
+                uniform float x_r = x - 2.0;
+
+                uniform float poly_r = r8;
+                poly_r = poly_r * x_r + r7;
+                poly_r = poly_r * x_r + r6;
+                poly_r = poly_r * x_r + r5;
+                poly_r = poly_r * x_r + r4;
+                poly_r = poly_r * x_r + r3;
+                poly_r = poly_r * x_r + r2;
+                poly_r = poly_r * x_r + r1;
+                poly_r = poly_r * x_r;
+            }
+
+            if(x_full < 0.69)
+            {
+                // Usual case: positif normalized numbers
+                if(x_full > 2e-38)
+                    return poly - log(x_full);
+
+                // Pathological case: subnormal numbers
+                uniform float log1e30 = 6.9077552790e1;
+                return poly - (log(x_full * 1e30) - log1e30);
+            }
+
+            // x_full in [0.69;2.7]
+            if(x_full <= 2.7)
+                return poly;
+
+            // For recurence relations for x_full in ]2.7;3.7[
+            return poly + log(x_full - 1.0);
+        }
+        else
+        {
+            if(x_full >= 4.085003425410169e+36)
+                return pinf;
+            else if(isnan(x_full))
+                return x_full;
+
+            // Fine-tuned stirling formula in log space for the gamma function.
+            // See https://en.wikipedia.org/wiki/Stirling's_approximation.
+            // fixup = 1 / (A * 12x) - 1 / (B * 360x^3) + 1 / (C * 1260x^5)
+            const uniform float cst = 1.4189385332; // 0.5*ln(2*pi) + 0.5
+            uniform float xm1 = x_full - 1.0;
+            uniform float xm1sq = xm1 * xm1;
+            uniform float poly = 0.08333316;
+            poly = xm1sq * poly - 0.0027695;
+            poly = xm1sq * poly + 0.000674;
+            uniform float fixup = poly / (xm1 * xm1sq * xm1sq);
+            fixup = select(x_full < 1e9, fixup, 0.0); // avoid overflows
+            return cst + (x_full - 0.5) * (log(xm1) - 1.0) + fixup;
+        }
+    }
+}
+
+__declspec(safe) static inline float lgamma(float x_full) {
+    // Note: the SVML does not implement lgamma yet
+    if (__math_lib == __math_lib_system || __math_lib == __math_lib_svml) {
+        float ret;
+        foreach_active(i) {
+            uniform float r = __stdlib_lgammaf(extract(x_full, i));
+            ret = insert(ret, i, r);
+        }
+        return ret;
+    } else if (__math_lib == __math_lib_ispc_fast || __math_lib == __math_lib_ispc) {
+
+        // See the uniform version for more information
+
+        const float pinf = floatbits(0x7F800000);
+
+        cif(x_full < 3.7)
+        {
+            cif(x_full <= 0.0)
+                return pinf;
+
+            float x = x_full;
+            x = select(x_full < 0.69, x_full + 1.0, x);
+            x = select(x_full > 2.70, x_full - 1.0, x);
+
+            float x_l = x - 1.0;
+            float x_m = x - 1.4;
+            float x_r = x - 2.0;
+
+            const float gamma = 0.57721566490;
+            const float l2 = +8.2246694996e-01;
+            const float l3 = -4.0068203426e-01;
+            const float l4 = +2.7059456583e-01;
+            const float l5 = -2.0768109611e-01;
+            const float l6 = +1.6884036741e-01;
+            const float l7 = -1.3655139493e-01;
+            const float l8 = +1.4031064817e-01;
+            const float l9 = -1.7640815428e-01;
+
+            float poly_l = l9;
+            poly_l = poly_l * x_l + l8;
+            poly_l = poly_l * x_l + l7;
+            poly_l = poly_l * x_l + l6;
+            poly_l = poly_l * x_l + l5;
+            poly_l = poly_l * x_l + l4;
+            poly_l = poly_l * x_l + l3;
+            poly_l = poly_l * x_l + l2;
+            poly_l = poly_l * x_l - gamma;
+            poly_l = poly_l * x_l;
+
+            const float m0 = -1.1961291131e-01;
+            const float m1 = -6.1384510073e-02;
+            const float m2 = +5.1267652072e-01;
+            const float m3 = -1.6485886359e-01;
+            const float m4 = +7.6018368792e-02;
+            const float m5 = -4.0524224926e-02;
+            const float m6 = +1.8730974695e-02;
+
+            float poly_m = m6;
+            poly_m = poly_m * x_m + m5;
+            poly_m = poly_m * x_m + m4;
+            poly_m = poly_m * x_m + m3;
+            poly_m = poly_m * x_m + m2;
+            poly_m = poly_m * x_m + m1;
+            poly_m = poly_m * x_m + m0;
+
+            const float r1 = +4.2278433483e-01;
+            const float r2 = +3.2246704538e-01;
+            const float r3 = -6.7351615452e-02;
+            const float r4 = +2.0579459506e-02;
+            const float r5 = -7.3995308791e-03;
+            const float r6 = +2.9259083277e-03;
+            const float r7 = -1.1453369262e-03;
+            const float r8 = +2.9271601721e-04;
+
+            float poly_r = r8;
+            poly_r = poly_r * x_r + r7;
+            poly_r = poly_r * x_r + r6;
+            poly_r = poly_r * x_r + r5;
+            poly_r = poly_r * x_r + r4;
+            poly_r = poly_r * x_r + r3;
+            poly_r = poly_r * x_r + r2;
+            poly_r = poly_r * x_r + r1;
+            poly_r = poly_r * x_r;
+
+            float poly = select(x < 1.67, poly_m, poly_r);
+            poly = select(x < 1.25, poly_l, poly)
+
+            cif(x_full < 0.69)
+            {
+                cif(x_full > 2e-38)
+                    return poly - log(x_full);
+
+                float log1e30 = 6.9077552790e1;
+                return poly - (log(x_full * 1e30) - log1e30);
+            }
+
+            cif(x_full <= 2.7)
+                return poly;
+
+            return poly + log(x_full - 1.0);
+        }
+        else
+        {
+            if(x_full >= 4.085003425410169e+36)
+                return pinf;
+            else if(isnan(x_full))
+                return x_full;
+
+            const float cst = 1.4189385332;
+            float xm1 = x_full - 1.0;
+            float xm1sq = xm1 * xm1;
+            float poly = 0.08333316;
+            poly = xm1sq * poly - 0.0027695;
+            poly = xm1sq * poly + 0.000674;
+            float fixup = poly / (xm1 * xm1sq * xm1sq);
+            fixup = select(x_full < 1e9, fixup, 0.0);
+            return cst + (x_full - 0.5) * (log(xm1) - 1.0) + fixup;
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Transcendentals (16-bit float precision)
 
