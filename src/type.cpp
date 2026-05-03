@@ -357,6 +357,10 @@ const AtomicType *AtomicType::UniformInt64 = new AtomicType(AtomicType::TYPE_INT
 const AtomicType *AtomicType::VaryingInt64 = new AtomicType(AtomicType::TYPE_INT64, Variability::Varying, false);
 const AtomicType *AtomicType::UniformUInt64 = new AtomicType(AtomicType::TYPE_UINT64, Variability::Uniform, false);
 const AtomicType *AtomicType::VaryingUInt64 = new AtomicType(AtomicType::TYPE_UINT64, Variability::Varying, false);
+const AtomicType *AtomicType::UniformInt128 = new AtomicType(AtomicType::TYPE_INT128, Variability::Uniform, false);
+const AtomicType *AtomicType::VaryingInt128 = new AtomicType(AtomicType::TYPE_INT128, Variability::Varying, false);
+const AtomicType *AtomicType::UniformUInt128 = new AtomicType(AtomicType::TYPE_UINT128, Variability::Uniform, false);
+const AtomicType *AtomicType::VaryingUInt128 = new AtomicType(AtomicType::TYPE_UINT128, Variability::Varying, false);
 const AtomicType *AtomicType::UniformDouble = new AtomicType(AtomicType::TYPE_DOUBLE, Variability::Uniform, false);
 const AtomicType *AtomicType::VaryingDouble = new AtomicType(AtomicType::TYPE_DOUBLE, Variability::Varying, false);
 const AtomicType *AtomicType::Dependent = new AtomicType(AtomicType::TYPE_DEPENDENT, Variability::Uniform, false);
@@ -384,17 +388,18 @@ bool AtomicType::IsFloatType() const {
 
 bool AtomicType::IsIntType() const {
     return (basicType == TYPE_INT8 || basicType == TYPE_UINT8 || basicType == TYPE_INT16 || basicType == TYPE_UINT16 ||
-            basicType == TYPE_INT32 || basicType == TYPE_UINT32 || basicType == TYPE_INT64 || basicType == TYPE_UINT64);
+            basicType == TYPE_INT32 || basicType == TYPE_UINT32 || basicType == TYPE_INT64 || basicType == TYPE_UINT64 ||
+            basicType == TYPE_INT128 || basicType == TYPE_UINT128);
 }
 
 bool AtomicType::IsUnsignedType() const {
     return (basicType == TYPE_BOOL || basicType == TYPE_UINT8 || basicType == TYPE_UINT16 || basicType == TYPE_UINT32 ||
-            basicType == TYPE_UINT64);
+            basicType == TYPE_UINT64 || basicType == TYPE_UINT128);
 }
 
 bool AtomicType::IsSignedType() const {
     return (basicType == TYPE_INT1 || basicType == TYPE_INT8 || basicType == TYPE_INT16 || basicType == TYPE_INT32 ||
-            basicType == TYPE_INT64);
+            basicType == TYPE_INT64 || basicType == TYPE_INT128);
 }
 
 bool AtomicType::IsBoolType() const { return basicType == TYPE_BOOL || basicType == TYPE_INT1; }
@@ -417,6 +422,8 @@ const AtomicType *AtomicType::GetAsUnsignedType() const {
         return createWithBasicType(TYPE_UINT32);
     case TYPE_INT64:
         return createWithBasicType(TYPE_UINT64);
+    case TYPE_INT128:
+        return createWithBasicType(TYPE_UINT128);
     default:
         FATAL("Unexpected basicType in GetAsUnsignedType()");
         return nullptr;
@@ -441,6 +448,8 @@ const AtomicType *AtomicType::GetAsSignedType() const {
         return createWithBasicType(TYPE_INT32);
     case TYPE_UINT64:
         return createWithBasicType(TYPE_INT64);
+    case TYPE_UINT128:
+        return createWithBasicType(TYPE_INT128);
     default:
         FATAL("Unexpected basicType in GetAsSignedType()");
         return nullptr;
@@ -496,6 +505,12 @@ std::string AtomicType::GetString() const {
         break;
     case TYPE_UINT64:
         ret += "unsigned int64";
+        break;
+    case TYPE_INT128:
+        ret += "int128";
+        break;
+    case TYPE_UINT128:
+        ret += "unsigned int128";
         break;
     case TYPE_DOUBLE:
         ret += "double";
@@ -557,6 +572,12 @@ std::string AtomicType::Mangle() const {
     case TYPE_UINT64:
         ret += "U";
         break;
+    case TYPE_INT128:
+        ret += "l";
+        break;
+    case TYPE_UINT128:
+        ret += "L";
+        break;
     case TYPE_DOUBLE:
         ret += "d";
         break;
@@ -614,6 +635,12 @@ std::string AtomicType::GetDeclaration(const std::string &name, DeclarationSynta
     case TYPE_UINT64:
         ret += "uint64_t";
         break;
+    case TYPE_INT128:
+        ret += "int128_t";
+        break;
+    case TYPE_UINT128:
+        ret += "uint128_t";
+        break;
     case TYPE_DOUBLE:
         ret += "double";
         break;
@@ -670,6 +697,9 @@ static llvm::Type *lGetAtomicLLVMType(llvm::LLVMContext *ctx, const AtomicType *
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
             return isUniform ? LLVMTypes::Int64Type : LLVMTypes::Int64VectorType;
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
+            return isUniform ? LLVMTypes::Int128Type : LLVMTypes::Int128VectorType;
         case AtomicType::TYPE_DOUBLE:
             return isUniform ? LLVMTypes::DoubleType : LLVMTypes::DoubleVectorType;
         case AtomicType::TYPE_DEPENDENT:
@@ -739,6 +769,12 @@ llvm::DIType *AtomicType::GetDIType(llvm::DIScope *scope) const {
             break;
         case TYPE_UINT64:
             return m->diBuilder->createBasicType("uint64", 64 /* size */, llvm::dwarf::DW_ATE_unsigned);
+            break;
+        case TYPE_INT128:
+            return m->diBuilder->createBasicType("int128", 128 /* size */, llvm::dwarf::DW_ATE_signed);
+            break;
+        case TYPE_UINT128:
+            return m->diBuilder->createBasicType("uint128", 128 /* size */, llvm::dwarf::DW_ATE_unsigned);
             break;
 
         default:

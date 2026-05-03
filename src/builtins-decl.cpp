@@ -44,11 +44,13 @@ DECL_BUILTIN_NAME(__gather32_float);
 DECL_BUILTIN_NAME(__gather32_generic_double);
 DECL_BUILTIN_NAME(__gather32_generic_float);
 DECL_BUILTIN_NAME(__gather32_generic_half);
+DECL_BUILTIN_NAME(__gather32_generic_i128);
 DECL_BUILTIN_NAME(__gather32_generic_i16);
 DECL_BUILTIN_NAME(__gather32_generic_i32);
 DECL_BUILTIN_NAME(__gather32_generic_i64);
 DECL_BUILTIN_NAME(__gather32_generic_i8);
 DECL_BUILTIN_NAME(__gather32_half);
+DECL_BUILTIN_NAME(__gather32_i128);
 DECL_BUILTIN_NAME(__gather32_i16);
 DECL_BUILTIN_NAME(__gather32_i32);
 DECL_BUILTIN_NAME(__gather32_i64);
@@ -58,11 +60,13 @@ DECL_BUILTIN_NAME(__gather64_float);
 DECL_BUILTIN_NAME(__gather64_generic_double);
 DECL_BUILTIN_NAME(__gather64_generic_float);
 DECL_BUILTIN_NAME(__gather64_generic_half);
+DECL_BUILTIN_NAME(__gather64_generic_i128);
 DECL_BUILTIN_NAME(__gather64_generic_i16);
 DECL_BUILTIN_NAME(__gather64_generic_i32);
 DECL_BUILTIN_NAME(__gather64_generic_i64);
 DECL_BUILTIN_NAME(__gather64_generic_i8);
 DECL_BUILTIN_NAME(__gather64_half);
+DECL_BUILTIN_NAME(__gather64_i128);
 DECL_BUILTIN_NAME(__gather64_i16);
 DECL_BUILTIN_NAME(__gather64_i32);
 DECL_BUILTIN_NAME(__gather64_i64);
@@ -70,6 +74,7 @@ DECL_BUILTIN_NAME(__gather64_i8);
 DECL_BUILTIN_NAME(__gather_base_offsets32_double);
 DECL_BUILTIN_NAME(__gather_base_offsets32_float);
 DECL_BUILTIN_NAME(__gather_base_offsets32_half);
+DECL_BUILTIN_NAME(__gather_base_offsets32_i128);
 DECL_BUILTIN_NAME(__gather_base_offsets32_i16);
 DECL_BUILTIN_NAME(__gather_base_offsets32_i32);
 DECL_BUILTIN_NAME(__gather_base_offsets32_i64);
@@ -77,6 +82,7 @@ DECL_BUILTIN_NAME(__gather_base_offsets32_i8);
 DECL_BUILTIN_NAME(__gather_base_offsets64_double);
 DECL_BUILTIN_NAME(__gather_base_offsets64_float);
 DECL_BUILTIN_NAME(__gather_base_offsets64_half);
+DECL_BUILTIN_NAME(__gather_base_offsets64_i128);
 DECL_BUILTIN_NAME(__gather_base_offsets64_i16);
 DECL_BUILTIN_NAME(__gather_base_offsets64_i32);
 DECL_BUILTIN_NAME(__gather_base_offsets64_i64);
@@ -84,6 +90,7 @@ DECL_BUILTIN_NAME(__gather_base_offsets64_i8);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_double);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_float);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_half);
+DECL_BUILTIN_NAME(__gather_factored_base_offsets32_i128);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_i16);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_i32);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets32_i64);
@@ -91,6 +98,7 @@ DECL_BUILTIN_NAME(__gather_factored_base_offsets32_i8);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_double);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_float);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_half);
+DECL_BUILTIN_NAME(__gather_factored_base_offsets64_i128);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_i16);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_i32);
 DECL_BUILTIN_NAME(__gather_factored_base_offsets64_i64);
@@ -117,6 +125,7 @@ DECL_BUILTIN_NAME(ISPCInstrument);
 DECL_BUILTIN_NAME(__masked_load_blend_double);
 DECL_BUILTIN_NAME(__masked_load_blend_float);
 DECL_BUILTIN_NAME(__masked_load_blend_half);
+DECL_BUILTIN_NAME(__masked_load_blend_i128);
 DECL_BUILTIN_NAME(__masked_load_blend_i16);
 DECL_BUILTIN_NAME(__masked_load_blend_i32);
 DECL_BUILTIN_NAME(__masked_load_blend_i64);
@@ -124,6 +133,7 @@ DECL_BUILTIN_NAME(__masked_load_blend_i8);
 DECL_BUILTIN_NAME(__masked_load_double);
 DECL_BUILTIN_NAME(__masked_load_float);
 DECL_BUILTIN_NAME(__masked_load_half);
+DECL_BUILTIN_NAME(__masked_load_i128);
 DECL_BUILTIN_NAME(__masked_load_i16);
 DECL_BUILTIN_NAME(__masked_load_i32);
 DECL_BUILTIN_NAME(__masked_load_i64);
@@ -131,6 +141,7 @@ DECL_BUILTIN_NAME(__masked_load_i8);
 DECL_BUILTIN_NAME(__masked_store_blend_double);
 DECL_BUILTIN_NAME(__masked_store_blend_float);
 DECL_BUILTIN_NAME(__masked_store_blend_half);
+DECL_BUILTIN_NAME(__masked_store_blend_i128);
 DECL_BUILTIN_NAME(__masked_store_blend_i16);
 DECL_BUILTIN_NAME(__masked_store_blend_i32);
 DECL_BUILTIN_NAME(__masked_store_blend_i64);
@@ -138,6 +149,7 @@ DECL_BUILTIN_NAME(__masked_store_blend_i8);
 DECL_BUILTIN_NAME(__masked_store_double);
 DECL_BUILTIN_NAME(__masked_store_float);
 DECL_BUILTIN_NAME(__masked_store_half);
+DECL_BUILTIN_NAME(__masked_store_i128);
 DECL_BUILTIN_NAME(__masked_store_i16);
 DECL_BUILTIN_NAME(__masked_store_i32);
 DECL_BUILTIN_NAME(__masked_store_i64);
@@ -182,6 +194,7 @@ DECL_BUILTIN_NAME(__prefetch_write_varying_3_native);
 DECL_BUILTIN_NAME(__pseudo_gather32_double);
 DECL_BUILTIN_NAME(__pseudo_gather32_float);
 DECL_BUILTIN_NAME(__pseudo_gather32_half);
+DECL_BUILTIN_NAME(__pseudo_gather32_i128);
 DECL_BUILTIN_NAME(__pseudo_gather32_i16);
 DECL_BUILTIN_NAME(__pseudo_gather32_i32);
 DECL_BUILTIN_NAME(__pseudo_gather32_i64);
@@ -189,6 +202,7 @@ DECL_BUILTIN_NAME(__pseudo_gather32_i8);
 DECL_BUILTIN_NAME(__pseudo_gather64_double);
 DECL_BUILTIN_NAME(__pseudo_gather64_float);
 DECL_BUILTIN_NAME(__pseudo_gather64_half);
+DECL_BUILTIN_NAME(__pseudo_gather64_i128);
 DECL_BUILTIN_NAME(__pseudo_gather64_i16);
 DECL_BUILTIN_NAME(__pseudo_gather64_i32);
 DECL_BUILTIN_NAME(__pseudo_gather64_i64);
@@ -196,6 +210,7 @@ DECL_BUILTIN_NAME(__pseudo_gather64_i8);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_double);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_float);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_half);
+DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_i128);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_i16);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_i32);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_i64);
@@ -203,6 +218,7 @@ DECL_BUILTIN_NAME(__pseudo_gather_base_offsets32_i8);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_double);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_float);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_half);
+DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_i128);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_i16);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_i32);
 DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_i64);
@@ -210,6 +226,7 @@ DECL_BUILTIN_NAME(__pseudo_gather_base_offsets64_i8);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_double);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_float);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_half);
+DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_i128);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_i16);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_i32);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_i64);
@@ -217,6 +234,7 @@ DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets32_i8);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_double);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_float);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_half);
+DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_i128);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_i16);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_i32);
 DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_i64);
@@ -224,6 +242,7 @@ DECL_BUILTIN_NAME(__pseudo_gather_factored_base_offsets64_i8);
 DECL_BUILTIN_NAME(__pseudo_masked_store_double);
 DECL_BUILTIN_NAME(__pseudo_masked_store_float);
 DECL_BUILTIN_NAME(__pseudo_masked_store_half);
+DECL_BUILTIN_NAME(__pseudo_masked_store_i128);
 DECL_BUILTIN_NAME(__pseudo_masked_store_i16);
 DECL_BUILTIN_NAME(__pseudo_masked_store_i32);
 DECL_BUILTIN_NAME(__pseudo_masked_store_i64);
@@ -245,6 +264,7 @@ DECL_BUILTIN_NAME(__pseudo_prefetch_write_varying_3_native);
 DECL_BUILTIN_NAME(__pseudo_scatter32_double);
 DECL_BUILTIN_NAME(__pseudo_scatter32_float);
 DECL_BUILTIN_NAME(__pseudo_scatter32_half);
+DECL_BUILTIN_NAME(__pseudo_scatter32_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter32_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter32_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter32_i64);
@@ -252,6 +272,7 @@ DECL_BUILTIN_NAME(__pseudo_scatter32_i8);
 DECL_BUILTIN_NAME(__pseudo_scatter64_double);
 DECL_BUILTIN_NAME(__pseudo_scatter64_float);
 DECL_BUILTIN_NAME(__pseudo_scatter64_half);
+DECL_BUILTIN_NAME(__pseudo_scatter64_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter64_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter64_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter64_i64);
@@ -259,6 +280,7 @@ DECL_BUILTIN_NAME(__pseudo_scatter64_i8);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_double);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_float);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_half);
+DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_i64);
@@ -266,6 +288,7 @@ DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets32_i8);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_double);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_float);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_half);
+DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_i64);
@@ -273,6 +296,7 @@ DECL_BUILTIN_NAME(__pseudo_scatter_base_offsets64_i8);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_double);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_float);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_half);
+DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_i64);
@@ -280,6 +304,7 @@ DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets32_i8);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_double);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_float);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_half);
+DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_i128);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_i16);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_i32);
 DECL_BUILTIN_NAME(__pseudo_scatter_factored_base_offsets64_i64);
@@ -290,11 +315,13 @@ DECL_BUILTIN_NAME(__scatter32_float);
 DECL_BUILTIN_NAME(__scatter32_generic_double);
 DECL_BUILTIN_NAME(__scatter32_generic_float);
 DECL_BUILTIN_NAME(__scatter32_generic_half);
+DECL_BUILTIN_NAME(__scatter32_generic_i128);
 DECL_BUILTIN_NAME(__scatter32_generic_i16);
 DECL_BUILTIN_NAME(__scatter32_generic_i32);
 DECL_BUILTIN_NAME(__scatter32_generic_i64);
 DECL_BUILTIN_NAME(__scatter32_generic_i8);
 DECL_BUILTIN_NAME(__scatter32_half);
+DECL_BUILTIN_NAME(__scatter32_i128);
 DECL_BUILTIN_NAME(__scatter32_i16);
 DECL_BUILTIN_NAME(__scatter32_i32);
 DECL_BUILTIN_NAME(__scatter32_i64);
@@ -304,11 +331,13 @@ DECL_BUILTIN_NAME(__scatter64_float);
 DECL_BUILTIN_NAME(__scatter64_generic_double);
 DECL_BUILTIN_NAME(__scatter64_generic_float);
 DECL_BUILTIN_NAME(__scatter64_generic_half);
+DECL_BUILTIN_NAME(__scatter64_generic_i128);
 DECL_BUILTIN_NAME(__scatter64_generic_i16);
 DECL_BUILTIN_NAME(__scatter64_generic_i32);
 DECL_BUILTIN_NAME(__scatter64_generic_i64);
 DECL_BUILTIN_NAME(__scatter64_generic_i8);
 DECL_BUILTIN_NAME(__scatter64_half);
+DECL_BUILTIN_NAME(__scatter64_i128);
 DECL_BUILTIN_NAME(__scatter64_i16);
 DECL_BUILTIN_NAME(__scatter64_i32);
 DECL_BUILTIN_NAME(__scatter64_i64);
@@ -316,6 +345,7 @@ DECL_BUILTIN_NAME(__scatter64_i8);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_double);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_float);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_half);
+DECL_BUILTIN_NAME(__scatter_base_offsets32_i128);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_i16);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_i32);
 DECL_BUILTIN_NAME(__scatter_base_offsets32_i64);
@@ -323,6 +353,7 @@ DECL_BUILTIN_NAME(__scatter_base_offsets32_i8);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_double);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_float);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_half);
+DECL_BUILTIN_NAME(__scatter_base_offsets64_i128);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_i16);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_i32);
 DECL_BUILTIN_NAME(__scatter_base_offsets64_i64);
@@ -330,6 +361,7 @@ DECL_BUILTIN_NAME(__scatter_base_offsets64_i8);
 DECL_BUILTIN_NAME(__scatter_elt32_double);
 DECL_BUILTIN_NAME(__scatter_elt32_float);
 DECL_BUILTIN_NAME(__scatter_elt32_half);
+DECL_BUILTIN_NAME(__scatter_elt32_i128);
 DECL_BUILTIN_NAME(__scatter_elt32_i16);
 DECL_BUILTIN_NAME(__scatter_elt32_i32);
 DECL_BUILTIN_NAME(__scatter_elt32_i64);
@@ -337,6 +369,7 @@ DECL_BUILTIN_NAME(__scatter_elt32_i8);
 DECL_BUILTIN_NAME(__scatter_elt64_double);
 DECL_BUILTIN_NAME(__scatter_elt64_float);
 DECL_BUILTIN_NAME(__scatter_elt64_half);
+DECL_BUILTIN_NAME(__scatter_elt64_i128);
 DECL_BUILTIN_NAME(__scatter_elt64_i16);
 DECL_BUILTIN_NAME(__scatter_elt64_i32);
 DECL_BUILTIN_NAME(__scatter_elt64_i64);
@@ -344,6 +377,7 @@ DECL_BUILTIN_NAME(__scatter_elt64_i8);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_double);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_float);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_half);
+DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_i128);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_i16);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_i32);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_i64);
@@ -351,6 +385,7 @@ DECL_BUILTIN_NAME(__scatter_factored_base_offsets32_i8);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_double);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_float);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_half);
+DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_i128);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_i16);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_i32);
 DECL_BUILTIN_NAME(__scatter_factored_base_offsets64_i64);
@@ -359,11 +394,13 @@ DECL_BUILTIN_NAME(__sdiv_i8);
 DECL_BUILTIN_NAME(__sdiv_i16);
 DECL_BUILTIN_NAME(__sdiv_i32);
 DECL_BUILTIN_NAME(__sdiv_i64);
+DECL_BUILTIN_NAME(__sdiv_i128);
 DECL_BUILTIN_NAME(__set_ftz_daz_flags);
 DECL_BUILTIN_NAME(__srem_i8);
 DECL_BUILTIN_NAME(__srem_i16);
 DECL_BUILTIN_NAME(__srem_i32);
 DECL_BUILTIN_NAME(__srem_i64);
+DECL_BUILTIN_NAME(__srem_i128);
 DECL_BUILTIN_NAME(__task_count);
 DECL_BUILTIN_NAME(__task_count0);
 DECL_BUILTIN_NAME(__task_count1);
@@ -379,12 +416,14 @@ DECL_BUILTIN_NAME(__udiv_i8);
 DECL_BUILTIN_NAME(__udiv_i16);
 DECL_BUILTIN_NAME(__udiv_i32);
 DECL_BUILTIN_NAME(__udiv_i64);
+DECL_BUILTIN_NAME(__udiv_i128);
 DECL_BUILTIN_NAME(__urem_i8);
 DECL_BUILTIN_NAME(__extendhfdf2);
 DECL_BUILTIN_NAME(__extendhfsf2);
 DECL_BUILTIN_NAME(__urem_i16);
 DECL_BUILTIN_NAME(__urem_i32);
 DECL_BUILTIN_NAME(__urem_i64);
+DECL_BUILTIN_NAME(__urem_i128);
 DECL_BUILTIN_NAME(__wasm_cmp_msk_eq);
 
 std::unordered_map<PersistentGroup, std::vector<const char *>> persistentGroups = {
@@ -449,6 +488,27 @@ std::unordered_map<PersistentGroup, std::vector<const char *>> persistentGroups 
             __gather_factored_base_offsets64_half,
             __gather_base_offsets32_half,
             __gather_factored_base_offsets32_half,
+        },
+    },
+    {
+        PersistentGroup::GATHER_I128,
+        {
+            __pseudo_gather64_i128,
+            __pseudo_gather32_i128,
+            __pseudo_gather_base_offsets64_i128,
+            __pseudo_gather_factored_base_offsets64_i128,
+            __pseudo_gather_base_offsets32_i128,
+            __pseudo_gather_factored_base_offsets32_i128,
+            __masked_load_i128,
+            __masked_load_blend_i128,
+            __gather64_generic_i128,
+            __gather64_i128,
+            __gather32_generic_i128,
+            __gather32_i128,
+            __gather_base_offsets64_i128,
+            __gather_factored_base_offsets64_i128,
+            __gather_base_offsets32_i128,
+            __gather_factored_base_offsets32_i128,
         },
     },
     {
@@ -637,6 +697,28 @@ std::unordered_map<PersistentGroup, std::vector<const char *>> persistentGroups 
             __scatter_factored_base_offsets64_half,
             __scatter_base_offsets32_half,
             __scatter_factored_base_offsets32_half,
+        },
+    },
+    {
+        PersistentGroup::SCATTER_I128,
+        {
+            __pseudo_scatter64_i128,
+            __pseudo_scatter32_i128,
+            __pseudo_scatter_base_offsets64_i128,
+            __pseudo_scatter_factored_base_offsets64_i128,
+            __pseudo_scatter_base_offsets32_i128,
+            __pseudo_scatter_factored_base_offsets32_i128,
+            __pseudo_masked_store_i128,
+            __masked_store_blend_i128,
+            __masked_store_i128,
+            __scatter64_generic_i128,
+            __scatter64_i128,
+            __scatter32_generic_i128,
+            __scatter32_i128,
+            __scatter_base_offsets64_i128,
+            __scatter_factored_base_offsets64_i128,
+            __scatter_base_offsets32_i128,
+            __scatter_factored_base_offsets32_i128,
         },
     },
     {

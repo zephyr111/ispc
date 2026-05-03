@@ -33,6 +33,7 @@
 #include <list>
 #include <set>
 #include <sstream>
+#include <iomanip>
 #include <stdio.h>
 #include <utility>
 
@@ -134,6 +135,8 @@ static bool lIsAllIntZeros(Expr *expr) {
     if (ce == nullptr) {
         return false;
     }
+
+    // TODO [zephyr111]: should we switch to 128-bit here?
 
     uint64_t vals[ISPC_MAX_NVEC];
     int count = ce->GetValues(vals);
@@ -1102,6 +1105,16 @@ static llvm::Constant *lLLVMConstantValue(const Type *type, llvm::LLVMContext *c
             Assert(value == (int64_t)i);
             return isUniform ? LLVMUInt64(i) : LLVMUInt64Vector(i);
         }
+        case AtomicType::TYPE_INT128: {
+            __int128_t i = (__int128_t)value;
+            Assert((double)i == value);
+            return isUniform ? LLVMInt128(i) : LLVMInt128Vector(i);
+        }
+        case AtomicType::TYPE_UINT128: {
+            __uint128_t i = (__uint128_t)value;
+            Assert(value == (__int128_t)i);
+            return isUniform ? LLVMUInt128(i) : LLVMUInt128Vector(i);
+        }
         case AtomicType::TYPE_FLOAT16: {
             llvm::APFloat apf16 = lCreateAPFloat(value, LLVMTypes::Float16Type);
             return isUniform ? LLVMFloat16(std::move(apf16)) : LLVMFloat16Vector(std::move(apf16));
@@ -1421,7 +1434,13 @@ Expr *UnaryExpr::Optimize() {
         // An error will be issued elsewhere...
         return this;
     case Negate: {
-        if (Type::EqualIgnoringConst(type, AtomicType::UniformInt64) ||
+        if (Type::EqualIgnoringConst(type, AtomicType::UniformInt128) ||
+            Type::EqualIgnoringConst(type, AtomicType::VaryingInt128)) {
+            return lOptimizeNegate<__int128_t>(constExpr, type, pos);
+        } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt128) ||
+                   Type::EqualIgnoringConst(type, AtomicType::VaryingUInt128)) {
+            return lOptimizeNegate<__uint128_t>(constExpr, type, pos);
+        } else if (Type::EqualIgnoringConst(type, AtomicType::UniformInt64) ||
             Type::EqualIgnoringConst(type, AtomicType::VaryingInt64)) {
             return lOptimizeNegate<int64_t>(constExpr, type, pos);
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt64) ||
@@ -1485,6 +1504,12 @@ Expr *UnaryExpr::Optimize() {
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt64) ||
                    Type::EqualIgnoringConst(type, AtomicType::VaryingUInt64)) {
             return lOptimizeBitNot<uint64_t>(constExpr, type, pos);
+        } else if (Type::EqualIgnoringConst(type, AtomicType::UniformInt128) ||
+                   Type::EqualIgnoringConst(type, AtomicType::VaryingInt128)) {
+            return lOptimizeBitNot<__int128_t>(constExpr, type, pos);
+        } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt128) ||
+                   Type::EqualIgnoringConst(type, AtomicType::VaryingUInt128)) {
+            return lOptimizeBitNot<__uint128_t>(constExpr, type, pos);
         } else {
             FATAL("unexpected type in UnaryExpr::Optimize() / BitNot case");
         }
@@ -2776,6 +2801,7 @@ Expr *BinaryExpr::Optimize() {
         return this;
     }
 
+    // TODO [zephyr111]: should we switch to 128-bit integers for the RHS of lConstFoldBinaryIntOp?
     AssertPos(pos, Type::EqualIgnoringConst(arg0->GetType(), arg1->GetType()));
     const Type *type = arg0->GetType()->GetAsNonConstType();
     if (Type::Equal(type, AtomicType::UniformFloat16) || Type::Equal(type, AtomicType::VaryingFloat16)) {
@@ -2802,6 +2828,10 @@ Expr *BinaryExpr::Optimize() {
         return lConstFoldBinaryIntOp<int64_t, int64_t>(constArg0, constArg1, op, this, pos);
     } else if (Type::Equal(type, AtomicType::UniformUInt64) || Type::Equal(type, AtomicType::VaryingUInt64)) {
         return lConstFoldBinaryIntOp<uint64_t, uint64_t>(constArg0, constArg1, op, this, pos);
+    } else if (Type::Equal(type, AtomicType::UniformInt128) || Type::Equal(type, AtomicType::VaryingInt128)) {
+        return lConstFoldBinaryIntOp<__int128_t, __int128_t>(constArg0, constArg1, op, this, pos);
+    } else if (Type::Equal(type, AtomicType::UniformUInt128) || Type::Equal(type, AtomicType::VaryingUInt128)) {
+        return lConstFoldBinaryIntOp<__uint128_t, __uint128_t>(constArg0, constArg1, op, this, pos);
     } else if (Type::Equal(type, AtomicType::UniformBool) || Type::Equal(type, AtomicType::VaryingBool)) {
         bool v0[ISPC_MAX_NVEC], v1[ISPC_MAX_NVEC];
         constArg0->GetValues(v0);
@@ -4020,6 +4050,10 @@ Expr *SelectExpr::Optimize() {
             return lConstFoldSelect<int64_t>(bv, constExpr1, constExpr2, exprType, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingUInt64)) {
             return lConstFoldSelect<uint64_t>(bv, constExpr1, constExpr2, exprType, pos);
+        } else if (Type::Equal(exprType, AtomicType::VaryingInt128)) {
+            return lConstFoldSelect<__int128_t>(bv, constExpr1, constExpr2, exprType, pos);
+        } else if (Type::Equal(exprType, AtomicType::VaryingUInt128)) {
+            return lConstFoldSelect<__uint128_t>(bv, constExpr1, constExpr2, exprType, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingFloat16)) {
             return lConstFoldSelectFP(bv, constExpr1, constExpr2, exprType, LLVMTypes::Float16Type, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingFloat)) {
@@ -5368,6 +5402,10 @@ Expr *IndexExpr::TypeCheck() {
     bool isUniform = (index->GetType()->IsUniformType() && !g->opt.disableUniformMemoryOptimizations);
 
     if (!isUniform) {
+        // TODO [zephyr111]: what should we do with a 128-bit index?
+        Assert(!(Type::EqualIgnoringConst(indexType->GetAsUniformType(), AtomicType::UniformUInt128) ||
+                Type::EqualIgnoringConst(indexType->GetAsUniformType(), AtomicType::UniformInt128)));
+
         // Unless we have an explicit 64-bit index and are compiling to a
         // 64-bit target with 64-bit addressing, convert the index to an int32
         // or uint32 type depending on whether it's signed or unsigned.
@@ -5385,6 +5423,10 @@ Expr *IndexExpr::TypeCheck() {
             }
         }
     } else { // isUniform
+        // TODO [zephyr111]: what should we do with a 128-bit index?
+        Assert(!(Type::EqualIgnoringConst(indexType->GetAsUniformType(), AtomicType::UniformUInt128) ||
+                Type::EqualIgnoringConst(indexType->GetAsUniformType(), AtomicType::UniformInt128)));
+
         // For 32-bit target:
         //   force the index to 32 bit.
         // For 64-bit target:
@@ -6316,6 +6358,40 @@ ConstExpr::ConstExpr(const Type *t, uint64_t *u, SourcePos p) : Expr(p, ConstExp
     }
 }
 
+ConstExpr::ConstExpr(const Type *t, __int128_t i, SourcePos p) : Expr(p, ConstExprID) {
+    type = t;
+    type = type->GetAsConstType();
+    AssertPos(pos, Type::Equal(type, AtomicType::UniformInt128->GetAsConstType()));
+    int128Val[0] = i;
+}
+
+ConstExpr::ConstExpr(const Type *t, __int128_t *i, SourcePos p) : Expr(p, ConstExprID) {
+    type = t;
+    type = type->GetAsConstType();
+    AssertPos(pos, Type::Equal(type, AtomicType::UniformInt128->GetAsConstType()) ||
+                       Type::Equal(type, AtomicType::VaryingInt128->GetAsConstType()));
+    for (int j = 0; j < Count(); ++j) {
+        int128Val[j] = i[j];
+    }
+}
+
+ConstExpr::ConstExpr(const Type *t, __uint128_t u, SourcePos p) : Expr(p, ConstExprID) {
+    type = t;
+    type = type->GetAsConstType();
+    AssertPos(pos, Type::Equal(type, AtomicType::UniformUInt128->GetAsConstType()));
+    uint128Val[0] = u;
+}
+
+ConstExpr::ConstExpr(const Type *t, __uint128_t *u, SourcePos p) : Expr(p, ConstExprID) {
+    type = t;
+    type = type->GetAsConstType();
+    AssertPos(pos, Type::Equal(type, AtomicType::UniformUInt128->GetAsConstType()) ||
+                       Type::Equal(type, AtomicType::VaryingUInt128->GetAsConstType()));
+    for (int j = 0; j < Count(); ++j) {
+        uint128Val[j] = u[j];
+    }
+}
+
 ConstExpr::ConstExpr(const Type *t, bool b, SourcePos p) : Expr(p, ConstExprID) {
     type = t;
     type = type->GetAsConstType();
@@ -6366,6 +6442,12 @@ ConstExpr::ConstExpr(const ConstExpr *old, SourcePos p, unsigned scid) : Expr(p,
         break;
     case AtomicType::TYPE_UINT64:
         std::copy(old->uint64Val, old->uint64Val + Count(), uint64Val);
+        break;
+    case AtomicType::TYPE_INT128:
+        std::copy(old->int128Val, old->int128Val + Count(), int128Val);
+        break;
+    case AtomicType::TYPE_UINT128:
+        std::copy(old->uint128Val, old->uint128Val + Count(), uint128Val);
         break;
     case AtomicType::TYPE_FLOAT16:
     case AtomicType::TYPE_FLOAT:
@@ -6424,6 +6506,10 @@ llvm::Value *ConstExpr::GetValue(FunctionEmitContext *ctx) const {
         return isVarying ? LLVMInt64Vector(int64Val) : LLVMInt64(int64Val[0]);
     case AtomicType::TYPE_UINT64:
         return isVarying ? LLVMUInt64Vector(uint64Val) : LLVMUInt64(uint64Val[0]);
+    case AtomicType::TYPE_INT128:
+        return isVarying ? LLVMInt128Vector(int128Val) : LLVMInt128(int128Val[0]);
+    case AtomicType::TYPE_UINT128:
+        return isVarying ? LLVMUInt128Vector(uint128Val) : LLVMUInt128(uint128Val[0]);
     case AtomicType::TYPE_FLOAT16:
         return isVarying ? LLVMFloat16Vector(fpVal) : LLVMFloat16(fpVal[0]);
     case AtomicType::TYPE_FLOAT:
@@ -6490,6 +6576,16 @@ bool ConstExpr::IsEqual(const ConstExpr *ce) const {
             break;
         case AtomicType::TYPE_UINT64:
             if (uint64Val[i] != ce->uint64Val[i]) {
+                return false;
+            }
+            break;
+        case AtomicType::TYPE_INT128:
+            if (int128Val[i] != ce->int128Val[i]) {
+                return false;
+            }
+            break;
+        case AtomicType::TYPE_UINT128:
+            if (uint128Val[i] != ce->uint128Val[i]) {
                 return false;
             }
             break;
@@ -6622,6 +6718,12 @@ int ConstExpr::GetValues(std::vector<llvm::APFloat> &fpt, llvm::Type *type, bool
     case AtomicType::TYPE_UINT64:
         lConvert(uint64Val, fpt, type, Count(), forceVarying);
         break;
+    case AtomicType::TYPE_INT128:
+        lConvert(int128Val, fpt, type, Count(), forceVarying);
+        break;
+    case AtomicType::TYPE_UINT128:
+        lConvert(uint128Val, fpt, type, Count(), forceVarying);
+        break;
     case AtomicType::TYPE_FLOAT16:
     case AtomicType::TYPE_FLOAT:
     case AtomicType::TYPE_DOUBLE:
@@ -6663,6 +6765,12 @@ int ConstExpr::GetValues(std::vector<llvm::APFloat> &fpt, llvm::Type *type, bool
     case AtomicType::TYPE_UINT64:                                                                                      \
         lConvert(uint64Val, toPtr, Count(), forceVarying);                                                             \
         break;                                                                                                         \
+    case AtomicType::TYPE_INT128:                                                                                      \
+        lConvert(int128Val, toPtr, Count(), forceVarying);                                                             \
+        break;                                                                                                         \
+    case AtomicType::TYPE_UINT128:                                                                                     \
+        lConvert(uint128Val, toPtr, Count(), forceVarying);                                                            \
+        break;                                                                                                         \
     case AtomicType::TYPE_FLOAT16:                                                                                     \
     case AtomicType::TYPE_FLOAT:                                                                                       \
     case AtomicType::TYPE_DOUBLE:                                                                                      \
@@ -6690,6 +6798,10 @@ int ConstExpr::GetValues(uint32_t *toPtr, bool forceVarying) const { CONVERT_SWI
 int ConstExpr::GetValues(int64_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
 
 int ConstExpr::GetValues(uint64_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
+
+int ConstExpr::GetValues(__int128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
+
+int ConstExpr::GetValues(__uint128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
 
 int ConstExpr::Count() const { return GetType()->IsVaryingType() ? g->target->getVectorWidth() : 1; }
 
@@ -6785,6 +6897,22 @@ static std::pair<llvm::Constant *, bool> lGetConstExprConstant(const Type *const
             return std::pair<llvm::Constant *, bool>(LLVMUInt64(uiv[0]), isNotValidForMultiTargetGlobal);
         } else {
             return std::pair<llvm::Constant *, bool>(LLVMUInt64Vector(uiv), isNotValidForMultiTargetGlobal);
+        }
+    } else if (Type::Equal(constType, AtomicType::UniformInt128) || Type::Equal(constType, AtomicType::VaryingInt128)) {
+        __int128_t iv[ISPC_MAX_NVEC];
+        cExpr->GetValues(iv, constType->IsVaryingType());
+        if (constType->IsUniformType()) {
+            return std::pair<llvm::Constant *, bool>(LLVMInt128(iv[0]), isNotValidForMultiTargetGlobal);
+        } else {
+            return std::pair<llvm::Constant *, bool>(LLVMInt128Vector(iv), isNotValidForMultiTargetGlobal);
+        }
+    } else if (Type::Equal(constType, AtomicType::UniformUInt128) || Type::Equal(constType, AtomicType::VaryingUInt128)) {
+        __uint128_t uiv[ISPC_MAX_NVEC];
+        cExpr->GetValues(uiv, constType->IsVaryingType());
+        if (constType->IsUniformType()) {
+            return std::pair<llvm::Constant *, bool>(LLVMUInt128(uiv[0]), isNotValidForMultiTargetGlobal);
+        } else {
+            return std::pair<llvm::Constant *, bool>(LLVMUInt128Vector(uiv), isNotValidForMultiTargetGlobal);
         }
     } else if (Type::Equal(constType, AtomicType::UniformFloat16) ||
                Type::Equal(constType, AtomicType::VaryingFloat16)) {
@@ -6890,6 +7018,66 @@ std::string ConstExpr::GetValuesAsStr(const std::string &separator) const {
             break;
         case AtomicType::TYPE_UINT64:
             result << uint64Val[i];
+            break;
+        case AtomicType::TYPE_INT128:
+            {
+                // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
+                const int64_t val_1e9 = 1000000000ll;
+                const __int128_t val_1e18 = (__int128_t)val_1e9 * val_1e9;
+                if(int128Val[i] > -val_1e9 && int128Val[i] < val_1e9){
+                    result << (int64_t)int128Val[i];
+                }
+                else if(-val_1e18 < int128Val[i] && int128Val[i] < val_1e18) {
+                    std::ostringstream oss;
+                    __int128_t tmp = int128Val[i] / val_1e9;
+                    oss << (int64_t)tmp;
+                    tmp = int128Val[i] - tmp * val_1e9;
+                    tmp = tmp < 0 ? -tmp : tmp;
+                    oss.fill('0');
+                    oss << std::setw(9) << (int64_t)tmp;
+                    result << oss.str();
+                }
+                else {
+                    std::ostringstream oss;
+                    __int128_t tmp = int128Val[i] / val_1e18;
+                    oss << (int64_t)tmp;
+                    tmp = int128Val[i] - tmp * val_1e18;
+                    tmp = tmp < 0 ? -tmp : tmp;
+                    oss.fill('0');
+                    oss << std::setw(9) << (int64_t)(tmp / val_1e9);
+                    oss << std::setw(9) << (int64_t)(tmp % val_1e9);
+                    result << oss.str();
+                }
+            }
+            break;
+        case AtomicType::TYPE_UINT128:
+            {
+                // TODO [zephyr111]: FIXME: test this code carefully!
+                const uint64_t val_1e9 = 1000000000ull;
+                const __uint128_t val_1e18 = (__uint128_t)val_1e9 * val_1e9;
+                if(uint128Val[i] < val_1e9){
+                    result << (uint64_t)uint128Val[i];
+                }
+                else if(uint128Val[i] < val_1e18) {
+                    std::ostringstream oss;
+                    __uint128_t tmp = uint128Val[i] / val_1e9;
+                    oss << (uint64_t)tmp;
+                    tmp = uint128Val[i] - tmp * val_1e9;
+                    oss.fill('0');
+                    oss << std::setw(9) << (uint64_t)tmp;
+                    result << oss.str();
+                }
+                else {
+                    std::ostringstream oss;
+                    __uint128_t tmp = uint128Val[i] / val_1e18;
+                    oss << (uint64_t)tmp;
+                    tmp = uint128Val[i] - tmp * val_1e18;
+                    oss.fill('0');
+                    oss << std::setw(9) << (uint64_t)(tmp / val_1e9);
+                    oss << std::setw(9) << (uint64_t)(tmp % val_1e9);
+                    result << oss.str();
+                }
+            }
             break;
         case AtomicType::TYPE_FLOAT16:
         case AtomicType::TYPE_FLOAT:
@@ -7026,6 +7214,12 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
     case AtomicType::TYPE_UINT64:
         opName += "_to_uint64";
         break;
+    case AtomicType::TYPE_INT128:
+        opName += "_to_int128";
+        break;
+    case AtomicType::TYPE_UINT128:
+        opName += "_to_uint128";
+        break;
     case AtomicType::TYPE_FLOAT16:
         opName += "_to_float16";
         break;
@@ -7061,6 +7255,7 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_INT16:
         case AtomicType::TYPE_INT32:
         case AtomicType::TYPE_INT64:
+        case AtomicType::TYPE_INT128:
             cast = ctx->CastInst(llvm::Instruction::SIToFP, // signed int to float16
                                  exprVal, targetType, cOpName);
             break;
@@ -7078,9 +7273,13 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
                                  exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_UINT128:
             if (fromType->IsVaryingAtomicOrUniformVectorType() &&
                 g->target->shouldWarn(PerfWarningType::CVTUIntFloat16)) {
-                PerformanceWarning(pos, "Conversion from uint64 to float16 is slow. Use \"int32\" if possible");
+                if(basicFromType == AtomicType::TYPE_UINT64)
+                    PerformanceWarning(pos, "Conversion from uint64 to float16 is slow. Use \"int32\" if possible");
+                else
+                    PerformanceWarning(pos, "Conversion from uint128 to float16 is slow. Use \"int32\" if possible");
             }
             cast = ctx->CastInst(llvm::Instruction::UIToFP, // unsigned int to float16
                                  exprVal, targetType, cOpName);
@@ -7115,6 +7314,7 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_INT16:
         case AtomicType::TYPE_INT32:
         case AtomicType::TYPE_INT64:
+        case AtomicType::TYPE_INT128:
             cast = ctx->CastInst(llvm::Instruction::SIToFP, // signed int to float
                                  exprVal, targetType, cOpName);
             break;
@@ -7132,9 +7332,13 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
                                  exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_UINT128:
             if (fromType->IsVaryingAtomicOrUniformVectorType() &&
                 g->target->shouldWarn(PerfWarningType::CVTUIntFloat)) {
-                PerformanceWarning(pos, "Conversion from uint64 to float is slow. Use \"int64\" if possible");
+                if(basicFromType == AtomicType::TYPE_UINT64)
+                    PerformanceWarning(pos, "Conversion from uint64 to float is slow. Use \"int64\" if possible");
+                else
+                    PerformanceWarning(pos, "Conversion from uint128 to float is slow. Use \"int128\" if possible");
             }
             cast = ctx->CastInst(llvm::Instruction::UIToFP, // unsigned int to float
                                  exprVal, targetType, cOpName);
@@ -7169,6 +7373,7 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_INT16:
         case AtomicType::TYPE_INT32:
         case AtomicType::TYPE_INT64:
+        case AtomicType::TYPE_INT128:
             cast = ctx->CastInst(llvm::Instruction::SIToFP, // signed int
                                  exprVal, targetType, cOpName);
             break;
@@ -7186,9 +7391,13 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
                                  exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_UINT128:
             if (fromType->IsVaryingAtomicOrUniformVectorType() &&
                 g->target->shouldWarn(PerfWarningType::CVTUIntFloat)) {
-                PerformanceWarning(pos, "Conversion from uint64 to double is slow. Use \"int32\" if possible");
+                if(basicFromType == AtomicType::TYPE_UINT64)
+                    PerformanceWarning(pos, "Conversion from uint64 to double is slow. Use \"int32\" if possible");
+                else
+                    PerformanceWarning(pos, "Conversion from uint128 to double is slow. Use \"int32\" if possible");
             }
             cast = ctx->CastInst(llvm::Instruction::UIToFP, // unsigned int
                                  exprVal, targetType, cOpName);
@@ -7224,6 +7433,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         default:
@@ -7253,6 +7464,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT:
@@ -7287,6 +7500,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT16:
@@ -7323,6 +7538,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT16:
@@ -7359,6 +7576,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT16:
@@ -7395,6 +7614,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
             break;
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT16:
@@ -7431,6 +7652,8 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
             break;
         case AtomicType::TYPE_INT64:
         case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
             cast = ctx->TruncInst(exprVal, targetType, cOpName);
             break;
         case AtomicType::TYPE_FLOAT16:
@@ -7485,6 +7708,10 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT64:
             cast = exprVal;
             break;
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
+            cast = ctx->TruncInst(exprVal, targetType, cOpName);
+            break;
         case AtomicType::TYPE_FLOAT16:
         case AtomicType::TYPE_FLOAT:
         case AtomicType::TYPE_DOUBLE:
@@ -7519,6 +7746,10 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_UINT64:
             cast = exprVal;
             break;
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
+            cast = ctx->TruncInst(exprVal, targetType, cOpName);
+            break;
         case AtomicType::TYPE_FLOAT16:
             if (fromType->IsVaryingAtomicOrUniformVectorType() &&
                 g->target->shouldWarn(PerfWarningType::CVTUIntFloat16)) {
@@ -7548,6 +7779,96 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         }
         break;
     }
+    case AtomicType::TYPE_INT128: {
+        switch (basicFromType) {
+        case AtomicType::TYPE_BOOL:
+            if (fromType->IsVaryingAtomic()) {
+                exprVal = ctx->SwitchBoolToMaskType(exprVal, LLVMTypes::Int1VectorType, cOpName);
+            }
+            cast = ctx->ZExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_INT1:
+        case AtomicType::TYPE_INT8:
+        case AtomicType::TYPE_INT16:
+        case AtomicType::TYPE_INT32:
+        case AtomicType::TYPE_INT64:
+            cast = ctx->SExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_UINT8:
+        case AtomicType::TYPE_UINT16:
+        case AtomicType::TYPE_UINT32:
+        case AtomicType::TYPE_UINT64:
+            cast = ctx->ZExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
+            cast = exprVal;
+            break;
+        case AtomicType::TYPE_FLOAT16:
+        case AtomicType::TYPE_FLOAT:
+        case AtomicType::TYPE_DOUBLE:
+            cast = ctx->CastInst(llvm::Instruction::FPToSI, // signed int
+                                 exprVal, targetType, cOpName);
+            break;
+        default:
+            FATAL("unimplemented");
+        }
+        break;
+    }
+    case AtomicType::TYPE_UINT128: {
+        switch (basicFromType) {
+        case AtomicType::TYPE_BOOL:
+            if (fromType->IsVaryingAtomic()) {
+                exprVal = ctx->SwitchBoolToMaskType(exprVal, LLVMTypes::Int1VectorType, cOpName);
+            }
+            cast = ctx->ZExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_INT1:
+        case AtomicType::TYPE_INT8:
+        case AtomicType::TYPE_INT16:
+        case AtomicType::TYPE_INT32:
+        case AtomicType::TYPE_INT64:
+            cast = ctx->SExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_UINT8:
+        case AtomicType::TYPE_UINT16:
+        case AtomicType::TYPE_UINT32:
+        case AtomicType::TYPE_UINT64:
+            cast = ctx->ZExtInst(exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128:
+            cast = exprVal;
+            break;
+        case AtomicType::TYPE_FLOAT16:
+            if (fromType->IsVaryingAtomicOrUniformVectorType() &&
+                g->target->shouldWarn(PerfWarningType::CVTUIntFloat16)) {
+                PerformanceWarning(pos, "Conversion from float16 to uint128 is slow. Use \"int128\" if possible");
+            }
+            cast = ctx->CastInst(llvm::Instruction::FPToUI, // signed int
+                                 exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_FLOAT:
+            if (fromType->IsVaryingAtomicOrUniformVectorType() &&
+                g->target->shouldWarn(PerfWarningType::CVTUIntFloat)) {
+                PerformanceWarning(pos, "Conversion from float to uint128 is slow. Use \"int128\" if possible");
+            }
+            cast = ctx->CastInst(llvm::Instruction::FPToUI, // signed int
+                                 exprVal, targetType, cOpName);
+            break;
+        case AtomicType::TYPE_DOUBLE:
+            if (fromType->IsVaryingAtomicOrUniformVectorType() &&
+                g->target->shouldWarn(PerfWarningType::CVTUIntFloat)) {
+                PerformanceWarning(pos, "Conversion from double to uint128 is slow. Use \"int128\" if possible");
+            }
+            cast = ctx->CastInst(llvm::Instruction::FPToUI, // signed int
+                                 exprVal, targetType, cOpName);
+            break;
+        default:
+            FATAL("unimplemented");
+        }
+        break;
+    }
     case AtomicType::TYPE_BOOL: {
         switch (basicFromType) {
         case AtomicType::TYPE_BOOL:
@@ -7565,7 +7886,9 @@ static llvm::Value *lTypeConvAtomicOrUniformVector(FunctionEmitContext *ctx, llv
         case AtomicType::TYPE_INT32:
         case AtomicType::TYPE_UINT32:
         case AtomicType::TYPE_INT64:
-        case AtomicType::TYPE_UINT64: {
+        case AtomicType::TYPE_UINT64:
+        case AtomicType::TYPE_INT128:
+        case AtomicType::TYPE_UINT128: {
             llvm::Value *zero = LLVMIntAsType(0, fromType->LLVMType(g->ctx));
             cast = ctx->CmpInst(llvm::Instruction::ICmp, llvm::CmpInst::ICMP_NE, exprVal, zero, cOpName);
             break;
@@ -8167,8 +8490,9 @@ Expr *TypeCastExpr::TypeCheck() {
 
     // ptr -> int type casts
     if (fromPtr != nullptr && toAtomic != nullptr && toAtomic->IsIntType()) {
+        // TODO [zephyr111]: check carefully this part of the code!
         bool safeCast =
-            (toAtomic->basicType == AtomicType::TYPE_INT64 || toAtomic->basicType == AtomicType::TYPE_UINT64);
+            (toAtomic->basicType == AtomicType::TYPE_INT128 || toAtomic->basicType == AtomicType::TYPE_INT64 || toAtomic->basicType == AtomicType::TYPE_UINT64);
         if (g->target->is32Bit()) {
             safeCast |=
                 (toAtomic->basicType == AtomicType::TYPE_INT32 || toAtomic->basicType == AtomicType::TYPE_UINT32);
@@ -8264,6 +8588,16 @@ Expr *TypeCastExpr::Optimize() {
     }
     case AtomicType::TYPE_UINT64: {
         uint64_t uv[ISPC_MAX_NVEC];
+        constExpr->GetValues(uv, forceVarying);
+        return new ConstExpr(toType, uv, pos);
+    }
+    case AtomicType::TYPE_INT128: {
+        __int128_t iv[ISPC_MAX_NVEC];
+        constExpr->GetValues(iv, forceVarying);
+        return new ConstExpr(toType, iv, pos);
+    }
+    case AtomicType::TYPE_UINT128: {
+        __uint128_t uv[ISPC_MAX_NVEC];
         constExpr->GetValues(uv, forceVarying);
         return new ConstExpr(toType, uv, pos);
     }
@@ -9372,14 +9706,19 @@ static bool lIsMatchWithTypeWidening(const Type *callType, const Type *funcArgTy
     case AtomicType::TYPE_INT32:
     case AtomicType::TYPE_UINT32:
         return (funcAt->basicType == AtomicType::TYPE_INT32 || funcAt->basicType == AtomicType::TYPE_UINT32 ||
-                funcAt->basicType == AtomicType::TYPE_INT64 || funcAt->basicType == AtomicType::TYPE_UINT64);
+                funcAt->basicType == AtomicType::TYPE_INT64 || funcAt->basicType == AtomicType::TYPE_UINT64 ||
+                funcAt->basicType == AtomicType::TYPE_INT128 || funcAt->basicType == AtomicType::TYPE_UINT128);
     case AtomicType::TYPE_FLOAT16:
         return (funcAt->basicType == AtomicType::TYPE_FLOAT || funcAt->basicType == AtomicType::TYPE_DOUBLE);
     case AtomicType::TYPE_FLOAT:
         return (funcAt->basicType == AtomicType::TYPE_DOUBLE);
     case AtomicType::TYPE_INT64:
     case AtomicType::TYPE_UINT64:
-        return (funcAt->basicType == AtomicType::TYPE_INT64 || funcAt->basicType == AtomicType::TYPE_UINT64);
+        return (funcAt->basicType == AtomicType::TYPE_INT64 || funcAt->basicType == AtomicType::TYPE_UINT64 ||
+                funcAt->basicType == AtomicType::TYPE_INT128 || funcAt->basicType == AtomicType::TYPE_UINT128);
+    case AtomicType::TYPE_INT128:
+    case AtomicType::TYPE_UINT128:
+        return (funcAt->basicType == AtomicType::TYPE_INT128 || funcAt->basicType == AtomicType::TYPE_UINT128);
     case AtomicType::TYPE_DOUBLE:
         return false;
     case AtomicType::TYPE_VOID:
@@ -10236,6 +10575,7 @@ llvm::Value *NewExpr::GetValue(FunctionEmitContext *ctx) const {
             return nullptr;
         }
     } else {
+        // TODO [zephyr111]: should we change anything here for supporting 128-bit integers?
         if (isVarying) {
             if (do32Bit) {
                 countValue = LLVMInt32Vector(1);
@@ -10262,6 +10602,9 @@ llvm::Value *NewExpr::GetValue(FunctionEmitContext *ctx) const {
     }
     llvm::Value *allocSize =
         ctx->BinaryOperator(llvm::Instruction::Mul, countValue, eltSize, nullptr, WrapSemantics::NSW, "alloc_size");
+
+    // TODO [zephyr111]: it is not clear whether this should even happen, so better be safe than sorry!
+    Assert(allocSize->getType() != LLVMTypes::Int128Type);
 
     // Determine which allocation builtin function to call: uniform or
     // varying, and taking 32-bit or 64-bit allocation counts.

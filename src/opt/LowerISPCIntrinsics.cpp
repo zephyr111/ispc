@@ -53,7 +53,7 @@ static llvm::Value *lTruncVectorToi1(llvm::IRBuilder<> &builder, llvm::Value *V)
     // check if the vector element type is not i1
     llvm::Type *ET = VT->getElementType();
     if (!ET->isIntegerTy(1)) {
-        // truncate vector of i32/i16/i8 to vector of i1
+        // truncate vector of i128/i64/i32/i16/i8 to vector of i1
         llvm::Type *i1 = llvm::IntegerType::get(builder.getContext(), 1);
         llvm::Type *newVT = llvm::VectorType::get(i1, lGetVecNumElements(V), false);
         V = builder.CreateTrunc(V, newVT);
@@ -64,7 +64,7 @@ static llvm::Value *lTruncVectorToi1(llvm::IRBuilder<> &builder, llvm::Value *V)
 static llvm::Value *lCreateSelect(llvm::IRBuilder<> &builder, llvm::Value *C, llvm::Value *T, llvm::Value *F) {
     // when C is not a vector of i1, we need to truncate it to i1
     // This is ugly hack due to the fact that varying bool is represented as
-    // vector of i32/i16/i8 for some targets
+    // vector of i128/i64/i32/i16/i8 for some targets
     llvm::VectorType *VT = llvm::dyn_cast<llvm::VectorType>(C->getType());
     if (VT) {
         C = lTruncVectorToi1(builder, C);
@@ -281,7 +281,7 @@ static llvm::Value *lLowerFenceIntrinsic(llvm::CallInst *CI) {
 
 static llvm::Value *lLowerPackMaskIntrinsic(llvm::CallInst *CI) {
     // generate bitcast from <WIDTH x i1> to i`WIDTH if mask type is i1
-    // otherwise truncate the mask from <WIDTH x i32|i16|i8> to <WIDTH x i1> before
+    // otherwise truncate the mask from <WIDTH x i128|i64|i32|i16|i8> to <WIDTH x i1> before
     llvm::IRBuilder<> builder(CI);
     Assert(CI->arg_size() == 1);
 
@@ -294,6 +294,8 @@ static llvm::Value *lLowerPackMaskIntrinsic(llvm::CallInst *CI) {
     // get type with the same width as target width
     llvm::Type *newVT = llvm::IntegerType::get(builder.getContext(), lGetVecNumElements(V));
     llvm::Value *packed = builder.CreateBitCast(V, newVT);
+
+    // TODO [zephyr111]: should this be modified so to return i128 integers?
 
     // zero extend to i64
     return builder.CreateZExt(packed, llvm::Type::getInt64Ty(builder.getContext()));

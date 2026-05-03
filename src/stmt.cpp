@@ -3076,6 +3076,10 @@ void SwitchStmt::EmitCode(FunctionEmitContext *ctx) const {
 #ifdef ISPC_XE_ENABLED
     if (ctx->emitXeHardwareMask()) {
         if (isUniformCF && ctx->inXeSimdCF()) {
+
+            // TODO [zephyr111]: should we support 128-bit integers here?
+            AssertPos(pos, exprValue->getType() != LLVMTypes::Int128Type && exprValue->getType() != LLVMTypes::UInt128Type);
+
             // Broadcast value to work with EM. We are doing
             // it here because it is too late to make CMP
             // broadcast through BranchInst: we need vectorized
@@ -3144,6 +3148,8 @@ Stmt *SwitchStmt::TypeCheck() {
     if (exprType->IsDependent()) {
         return this;
     }
+
+    // TODO [zephyr111]: should we support 128-bit integers here?
 
     const Type *toType = nullptr;
     exprType = exprType->GetAsConstType();
@@ -3560,6 +3566,26 @@ static char lEncodeType(const Type *t) {
     }
     if (Type::Equal(t, AtomicType::VaryingUInt64)) {
         return PrintInfo::getEncoding4Varying<unsigned long long>();
+    }
+    if (Type::Equal(t, AtomicType::UniformInt128)) {
+        // TODO [zephyr111]: not supported yet
+        Assert(false);
+        //return PrintInfo::getEncoding4Uniform<__int128_t>();
+    }
+    if (Type::Equal(t, AtomicType::VaryingInt128)) {
+        // TODO [zephyr111]: not supported yet
+        Assert(false);
+        //return PrintInfo::getEncoding4Varying<__int128_t>();
+    }
+    if (Type::Equal(t, AtomicType::UniformUInt128)) {
+        // TODO [zephyr111]: not supported yet
+        Assert(false);
+        //return PrintInfo::getEncoding4Uniform<__uint128_t>();
+    }
+    if (Type::Equal(t, AtomicType::VaryingUInt128)) {
+        // TODO [zephyr111]: not supported yet
+        Assert(false);
+        //return PrintInfo::getEncoding4Varying<__uint128_t>();
     }
     if (Type::Equal(t, AtomicType::UniformDouble)) {
         return PrintInfo::getEncoding4Uniform<double>();

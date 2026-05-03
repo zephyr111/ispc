@@ -13,6 +13,7 @@ namespace ispc {
 */
 static int64_t lGetIntValue(llvm::Value *offset) {
     llvm::ConstantInt *intOffset = llvm::dyn_cast<llvm::ConstantInt>(offset);
+    // TODO [zephyr111]: should we support 128-bit integers here too?
     Assert(intOffset && (intOffset->getBitWidth() == 32 || intOffset->getBitWidth() == 64));
     return intOffset->getSExtValue();
 }
@@ -28,14 +29,15 @@ bool ReplaceStdlibShiftPass::replaceStdlibShiftBuiltin(llvm::BasicBlock &bb) {
     bool modifiedAny = false;
 
     llvm::Module *M = bb.getModule();
-    llvm::Function *shifts[6];
+    llvm::Function *shifts[7];
     std::string targetSuffix = g->target->GetTargetSuffix();
     shifts[0] = M->getFunction(std::string("shift___vytuni") + targetSuffix);
     shifts[1] = M->getFunction(std::string("shift___vysuni") + targetSuffix);
     shifts[2] = M->getFunction(std::string("shift___vyiuni") + targetSuffix);
     shifts[3] = M->getFunction(std::string("shift___vyIuni") + targetSuffix);
-    shifts[4] = M->getFunction(std::string("shift___vyfuni") + targetSuffix);
-    shifts[5] = M->getFunction(std::string("shift___vyduni") + targetSuffix);
+    shifts[4] = M->getFunction(std::string("shift___vyluni") + targetSuffix);
+    shifts[5] = M->getFunction(std::string("shift___vyfuni") + targetSuffix);
+    shifts[6] = M->getFunction(std::string("shift___vyduni") + targetSuffix);
 
     // Note: we do modify instruction list during the traversal, so the iterator
     // is moved forward before the instruction is processed.
@@ -44,7 +46,7 @@ bool ReplaceStdlibShiftPass::replaceStdlibShiftBuiltin(llvm::BasicBlock &bb) {
 
         if (llvm::CallInst *ci = llvm::dyn_cast<llvm::CallInst>(inst)) {
             llvm::Function *func = ci->getCalledFunction();
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < 7; i++) {
                 if (shifts[i] && (shifts[i] == func)) {
                     // we matched a call
                     llvm::Value *shiftedVec = ci->getArgOperand(0);

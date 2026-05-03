@@ -140,10 +140,12 @@ static constexpr CapabilityMetadata g_capabilityMetadata[] = {
  */
 static constexpr const char *g_configGlobalNames[] = {
     "__fast_masked_vload",
+    "__have_rotate_via_shuffle_128",
     "__have_rotate_via_shuffle_16",
     "__have_rotate_via_shuffle_32",
     "__have_rotate_via_shuffle_64",
     "__have_rotate_via_shuffle_8",
+    "__have_shift_via_shuffle_128",
     "__have_shift_via_shuffle_16",
     "__have_shift_via_shuffle_32",
     "__have_shift_via_shuffle_64",

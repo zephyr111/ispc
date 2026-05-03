@@ -139,6 +139,7 @@ static bool lReplacePseudoMaskedStore(llvm::CallInst *callInst) {
         {__pseudo_masked_store_i32, LMSInfo(__masked_store_blend_i32, __masked_store_i32)},
         {__pseudo_masked_store_float, LMSInfo(__masked_store_blend_float, __masked_store_float)},
         {__pseudo_masked_store_i64, LMSInfo(__masked_store_blend_i64, __masked_store_i64)},
+        {__pseudo_masked_store_i128, LMSInfo(__masked_store_blend_i128, __masked_store_i128)},
         {__pseudo_masked_store_double, LMSInfo(__masked_store_blend_double, __masked_store_double)},
     };
 
@@ -221,6 +222,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather32_i32, LowerGSInfo::Gather(__gather32_generic_i32, __gather32_i32)},
         {__pseudo_gather32_float, LowerGSInfo::Gather(__gather32_generic_float, __gather32_float)},
         {__pseudo_gather32_i64, LowerGSInfo::Gather(__gather32_generic_i64, __gather32_i64)},
+        {__pseudo_gather32_i128, LowerGSInfo::Gather(__gather32_generic_i128, __gather32_i128)},
         {__pseudo_gather32_double, LowerGSInfo::Gather(__gather32_generic_double, __gather32_double)},
 
         {__pseudo_gather64_i8, LowerGSInfo::Gather(__gather64_generic_i8, __gather64_i8)},
@@ -229,6 +231,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather64_i32, LowerGSInfo::Gather(__gather64_generic_i32, __gather64_i32)},
         {__pseudo_gather64_float, LowerGSInfo::Gather(__gather64_generic_float, __gather64_float)},
         {__pseudo_gather64_i64, LowerGSInfo::Gather(__gather64_generic_i64, __gather64_i64)},
+        {__pseudo_gather64_i128, LowerGSInfo::Gather(__gather64_generic_i128, __gather64_i128)},
         {__pseudo_gather64_double, LowerGSInfo::Gather(__gather64_generic_double, __gather64_double)},
 
         {__pseudo_gather_factored_base_offsets32_i8, LowerGSInfo::Gather(__gather_factored_base_offsets32_i8)},
@@ -237,6 +240,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets32_i32, LowerGSInfo::Gather(__gather_factored_base_offsets32_i32)},
         {__pseudo_gather_factored_base_offsets32_float, LowerGSInfo::Gather(__gather_factored_base_offsets32_float)},
         {__pseudo_gather_factored_base_offsets32_i64, LowerGSInfo::Gather(__gather_factored_base_offsets32_i64)},
+        {__pseudo_gather_factored_base_offsets32_i128, LowerGSInfo::Gather(__gather_factored_base_offsets32_i128)},
         {__pseudo_gather_factored_base_offsets32_double, LowerGSInfo::Gather(__gather_factored_base_offsets32_double)},
 
         {__pseudo_gather_factored_base_offsets64_i8, LowerGSInfo::Gather(__gather_factored_base_offsets64_i8)},
@@ -245,6 +249,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets64_i32, LowerGSInfo::Gather(__gather_factored_base_offsets64_i32)},
         {__pseudo_gather_factored_base_offsets64_float, LowerGSInfo::Gather(__gather_factored_base_offsets64_float)},
         {__pseudo_gather_factored_base_offsets64_i64, LowerGSInfo::Gather(__gather_factored_base_offsets64_i64)},
+        {__pseudo_gather_factored_base_offsets64_i128, LowerGSInfo::Gather(__gather_factored_base_offsets64_i128)},
         {__pseudo_gather_factored_base_offsets64_double, LowerGSInfo::Gather(__gather_factored_base_offsets64_double)},
 
         {__pseudo_gather_base_offsets32_i8, LowerGSInfo::Gather(__gather_base_offsets32_i8)},
@@ -253,6 +258,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather_base_offsets32_i32, LowerGSInfo::Gather(__gather_base_offsets32_i32)},
         {__pseudo_gather_base_offsets32_float, LowerGSInfo::Gather(__gather_base_offsets32_float)},
         {__pseudo_gather_base_offsets32_i64, LowerGSInfo::Gather(__gather_base_offsets32_i64)},
+        {__pseudo_gather_base_offsets32_i128, LowerGSInfo::Gather(__gather_base_offsets32_i128)},
         {__pseudo_gather_base_offsets32_double, LowerGSInfo::Gather(__gather_base_offsets32_double)},
 
         {__pseudo_gather_base_offsets64_i8, LowerGSInfo::Gather(__gather_base_offsets64_i8)},
@@ -261,6 +267,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_gather_base_offsets64_i32, LowerGSInfo::Gather(__gather_base_offsets64_i32)},
         {__pseudo_gather_base_offsets64_float, LowerGSInfo::Gather(__gather_base_offsets64_float)},
         {__pseudo_gather_base_offsets64_i64, LowerGSInfo::Gather(__gather_base_offsets64_i64)},
+        {__pseudo_gather_base_offsets64_i128, LowerGSInfo::Gather(__gather_base_offsets64_i128)},
         {__pseudo_gather_base_offsets64_double, LowerGSInfo::Gather(__gather_base_offsets64_double)},
 
         {__pseudo_scatter32_i8, LowerGSInfo::Scatter(__scatter32_generic_i8, __scatter32_i8)},
@@ -269,6 +276,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter32_i32, LowerGSInfo::Scatter(__scatter32_generic_i32, __scatter32_i32)},
         {__pseudo_scatter32_float, LowerGSInfo::Scatter(__scatter32_generic_float, __scatter32_float)},
         {__pseudo_scatter32_i64, LowerGSInfo::Scatter(__scatter32_generic_i64, __scatter32_i64)},
+        {__pseudo_scatter32_i128, LowerGSInfo::Scatter(__scatter32_generic_i128, __scatter32_i128)},
         {__pseudo_scatter32_double, LowerGSInfo::Scatter(__scatter32_generic_double, __scatter32_double)},
 
         {__pseudo_scatter64_i8, LowerGSInfo::Scatter(__scatter64_generic_i8, __scatter64_i8)},
@@ -277,6 +285,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter64_i32, LowerGSInfo::Scatter(__scatter64_generic_i32, __scatter64_i32)},
         {__pseudo_scatter64_float, LowerGSInfo::Scatter(__scatter64_generic_float, __scatter64_float)},
         {__pseudo_scatter64_i64, LowerGSInfo::Scatter(__scatter64_generic_i64, __scatter64_i64)},
+        {__pseudo_scatter64_i128, LowerGSInfo::Scatter(__scatter64_generic_i128, __scatter64_i128)},
         {__pseudo_scatter64_double, LowerGSInfo::Scatter(__scatter64_generic_double, __scatter64_double)},
 
         {__pseudo_scatter_factored_base_offsets32_i8, LowerGSInfo::Scatter(__scatter_factored_base_offsets32_i8)},
@@ -285,6 +294,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets32_i32, LowerGSInfo::Scatter(__scatter_factored_base_offsets32_i32)},
         {__pseudo_scatter_factored_base_offsets32_float, LowerGSInfo::Scatter(__scatter_factored_base_offsets32_float)},
         {__pseudo_scatter_factored_base_offsets32_i64, LowerGSInfo::Scatter(__scatter_factored_base_offsets32_i64)},
+        {__pseudo_scatter_factored_base_offsets32_i128, LowerGSInfo::Scatter(__scatter_factored_base_offsets32_i128)},
         {__pseudo_scatter_factored_base_offsets32_double,
          LowerGSInfo::Scatter(__scatter_factored_base_offsets32_double)},
 
@@ -294,6 +304,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets64_i32, LowerGSInfo::Scatter(__scatter_factored_base_offsets64_i32)},
         {__pseudo_scatter_factored_base_offsets64_float, LowerGSInfo::Scatter(__scatter_factored_base_offsets64_float)},
         {__pseudo_scatter_factored_base_offsets64_i64, LowerGSInfo::Scatter(__scatter_factored_base_offsets64_i64)},
+        {__pseudo_scatter_factored_base_offsets64_i128, LowerGSInfo::Scatter(__scatter_factored_base_offsets64_i128)},
         {__pseudo_scatter_factored_base_offsets64_double,
          LowerGSInfo::Scatter(__scatter_factored_base_offsets64_double)},
 
@@ -303,6 +314,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter_base_offsets32_i32, LowerGSInfo::Scatter(__scatter_base_offsets32_i32)},
         {__pseudo_scatter_base_offsets32_float, LowerGSInfo::Scatter(__scatter_base_offsets32_float)},
         {__pseudo_scatter_base_offsets32_i64, LowerGSInfo::Scatter(__scatter_base_offsets32_i64)},
+        {__pseudo_scatter_base_offsets32_i128, LowerGSInfo::Scatter(__scatter_base_offsets32_i128)},
         {__pseudo_scatter_base_offsets32_double, LowerGSInfo::Scatter(__scatter_base_offsets32_double)},
 
         {__pseudo_scatter_base_offsets64_i8, LowerGSInfo::Scatter(__scatter_base_offsets64_i8)},
@@ -311,6 +323,7 @@ static bool lReplacePseudoGS(llvm::CallInst *callInst) {
         {__pseudo_scatter_base_offsets64_i32, LowerGSInfo::Scatter(__scatter_base_offsets64_i32)},
         {__pseudo_scatter_base_offsets64_float, LowerGSInfo::Scatter(__scatter_base_offsets64_float)},
         {__pseudo_scatter_base_offsets64_i64, LowerGSInfo::Scatter(__scatter_base_offsets64_i64)},
+        {__pseudo_scatter_base_offsets64_i128, LowerGSInfo::Scatter(__scatter_base_offsets64_i128)},
         {__pseudo_scatter_base_offsets64_double, LowerGSInfo::Scatter(__scatter_base_offsets64_double)},
 
         {__pseudo_prefetch_read_varying_1, LowerGSInfo::Prefetch(__prefetch_read_varying_1)},

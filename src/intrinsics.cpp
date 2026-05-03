@@ -212,6 +212,8 @@ static const Type *lLLVMTypeToISPCType(const llvm::Type *t, bool intAsUnsigned) 
         return AtomicType::UniformDouble;
     } else if (t == LLVMTypes::Int64Type) {
         return intAsUnsigned ? AtomicType::UniformUInt64 : AtomicType::UniformInt64;
+    } else if (t == LLVMTypes::Int128Type) {
+        return intAsUnsigned ? AtomicType::UniformUInt128 : AtomicType::UniformInt128;
     }
 
     // varying
@@ -229,6 +231,8 @@ static const Type *lLLVMTypeToISPCType(const llvm::Type *t, bool intAsUnsigned) 
         return AtomicType::VaryingDouble;
     } else if (t == LLVMTypes::Int64VectorType) {
         return intAsUnsigned ? AtomicType::VaryingUInt64 : AtomicType::VaryingInt64;
+    } else if (t == LLVMTypes::Int128VectorType) {
+        return intAsUnsigned ? AtomicType::VaryingUInt128 : AtomicType::VaryingInt128;
     } else if (t == LLVMTypes::MaskType) {
         return AtomicType::VaryingBool;
     } else if (t == LLVMTypes::Int1VectorType) {

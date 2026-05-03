@@ -1694,6 +1694,8 @@ std::string lChooseDivisionName(llvm::Instruction::BinaryOps inst, llvm::Type *t
             return builtin::__sdiv_i32;
         } else if (type == LLVMTypes::Int64VectorType) {
             return builtin::__sdiv_i64;
+        } else if (type == LLVMTypes::Int128VectorType) {
+            return builtin::__sdiv_i128;
         }
         break;
     case llvm::Instruction::UDiv:
@@ -1705,6 +1707,8 @@ std::string lChooseDivisionName(llvm::Instruction::BinaryOps inst, llvm::Type *t
             return builtin::__udiv_i32;
         } else if (type == LLVMTypes::Int64VectorType) {
             return builtin::__udiv_i64;
+        } else if (type == LLVMTypes::Int128VectorType) {
+            return builtin::__udiv_i128;
         }
         break;
     case llvm::Instruction::SRem:
@@ -1716,6 +1720,8 @@ std::string lChooseDivisionName(llvm::Instruction::BinaryOps inst, llvm::Type *t
             return builtin::__srem_i32;
         } else if (type == LLVMTypes::Int64VectorType) {
             return builtin::__srem_i64;
+        } else if (type == LLVMTypes::Int128VectorType) {
+            return builtin::__srem_i128;
         }
         break;
     case llvm::Instruction::URem:
@@ -1727,6 +1733,8 @@ std::string lChooseDivisionName(llvm::Instruction::BinaryOps inst, llvm::Type *t
             return builtin::__urem_i32;
         } else if (type == LLVMTypes::Int64VectorType) {
             return builtin::__urem_i64;
+        } else if (type == LLVMTypes::Int128VectorType) {
+            return builtin::__urem_i128;
         }
         break;
     default:
@@ -2900,6 +2908,8 @@ llvm::Value *FunctionEmitContext::gather(llvm::Value *ptr, const PointerType *pt
         funcName = g->target->is32Bit() ? builtin::__pseudo_gather32_double : builtin::__pseudo_gather64_double;
     } else if (llvmReturnType == LLVMTypes::Int64VectorType) {
         funcName = g->target->is32Bit() ? builtin::__pseudo_gather32_i64 : builtin::__pseudo_gather64_i64;
+    } else if (llvmReturnType == LLVMTypes::Int128VectorType) {
+        funcName = g->target->is32Bit() ? builtin::__pseudo_gather32_i128 : builtin::__pseudo_gather64_i128;
     } else if (llvmReturnType == LLVMTypes::FloatVectorType) {
         funcName = g->target->is32Bit() ? builtin::__pseudo_gather32_float : builtin::__pseudo_gather64_float;
     } else if (llvmReturnType == LLVMTypes::Float16VectorType) {
@@ -3126,7 +3136,7 @@ void FunctionEmitContext::maskedStore(llvm::Value *value, llvm::Value *ptr, cons
     AssertPos(currentPos, Type::IsBasicType(valueType));
     valueType = valueType->GetAsNonConstType();
 
-    // Figure out if we need a 8, 16, 32 or 64-bit masked store.
+    // Figure out if we need a 8, 16, 32, 64 or 128-bit masked store.
     llvm::Function *maskedStoreFunc = nullptr;
     llvm::Type *llvmValueType = value->getType();
     llvm::Type *llvmValueStorageType = llvmValueType;
@@ -3174,6 +3184,8 @@ void FunctionEmitContext::maskedStore(llvm::Value *value, llvm::Value *ptr, cons
         return;
     } else if (llvmValueStorageType == LLVMTypes::DoubleVectorType) {
         maskedStoreFunc = m->module->getFunction(builtin::__pseudo_masked_store_double);
+    } else if (llvmValueStorageType == LLVMTypes::Int128VectorType) {
+        maskedStoreFunc = m->module->getFunction(builtin::__pseudo_masked_store_i128);
     } else if (llvmValueStorageType == LLVMTypes::Int64VectorType) {
         maskedStoreFunc = m->module->getFunction(builtin::__pseudo_masked_store_i64);
     } else if (llvmValueStorageType == LLVMTypes::FloatVectorType) {
@@ -3290,6 +3302,8 @@ void FunctionEmitContext::scatter(llvm::Value *value, llvm::Value *ptr, const Ty
         funcName = g->target->is32Bit() ? builtin::__pseudo_scatter32_i32 : builtin::__pseudo_scatter64_i64;
     } else if (llvmStorageType == LLVMTypes::DoubleVectorType) {
         funcName = g->target->is32Bit() ? builtin::__pseudo_scatter32_double : builtin::__pseudo_scatter64_double;
+    } else if (llvmStorageType == LLVMTypes::Int128VectorType) {
+        funcName = g->target->is32Bit() ? builtin::__pseudo_scatter32_i128 : builtin::__pseudo_scatter64_i128;
     } else if (llvmStorageType == LLVMTypes::Int64VectorType) {
         funcName = g->target->is32Bit() ? builtin::__pseudo_scatter32_i64 : builtin::__pseudo_scatter64_i64;
     } else if (llvmStorageType == LLVMTypes::FloatVectorType) {

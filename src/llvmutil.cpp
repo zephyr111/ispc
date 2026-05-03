@@ -38,6 +38,7 @@ llvm::Type *LLVMTypes::Int8Type = nullptr;
 llvm::Type *LLVMTypes::Int16Type = nullptr;
 llvm::Type *LLVMTypes::Int32Type = nullptr;
 llvm::Type *LLVMTypes::Int64Type = nullptr;
+llvm::Type *LLVMTypes::Int128Type = nullptr;
 llvm::Type *LLVMTypes::Float16Type = nullptr;
 llvm::Type *LLVMTypes::FloatType = nullptr;
 llvm::Type *LLVMTypes::DoubleType = nullptr;
@@ -52,6 +53,7 @@ llvm::VectorType *LLVMTypes::Int8VectorType = nullptr;
 llvm::VectorType *LLVMTypes::Int16VectorType = nullptr;
 llvm::VectorType *LLVMTypes::Int32VectorType = nullptr;
 llvm::VectorType *LLVMTypes::Int64VectorType = nullptr;
+llvm::VectorType *LLVMTypes::Int128VectorType = nullptr;
 llvm::VectorType *LLVMTypes::Float16VectorType = nullptr;
 llvm::VectorType *LLVMTypes::FloatVectorType = nullptr;
 llvm::VectorType *LLVMTypes::DoubleVectorType = nullptr;
@@ -77,6 +79,7 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
     LLVMTypes::Int16Type = llvm::Type::getInt16Ty(*ctx);
     LLVMTypes::Int32Type = llvm::Type::getInt32Ty(*ctx);
     LLVMTypes::Int64Type = llvm::Type::getInt64Ty(*ctx);
+    LLVMTypes::Int128Type = llvm::Type::getInt128Ty(*ctx);
     LLVMTypes::Float16Type = llvm::Type::getHalfTy(*ctx);
     LLVMTypes::FloatType = llvm::Type::getFloatTy(*ctx);
     LLVMTypes::DoubleType = llvm::Type::getDoubleTy(*ctx);
@@ -102,6 +105,9 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
     case 64:
         LLVMTypes::MaskType = LLVMTypes::BoolVectorType =
             LLVMVECTOR::get(llvm::Type::getInt64Ty(*ctx), target.getVectorWidth());
+    case 128:
+        LLVMTypes::MaskType = LLVMTypes::BoolVectorType =
+            LLVMVECTOR::get(llvm::Type::getInt128Ty(*ctx), target.getVectorWidth());
         break;
     default:
         FATAL("Unhandled mask width for initializing MaskType");
@@ -113,6 +119,7 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
     LLVMTypes::Int16VectorType = LLVMVECTOR::get(LLVMTypes::Int16Type, target.getVectorWidth());
     LLVMTypes::Int32VectorType = LLVMVECTOR::get(LLVMTypes::Int32Type, target.getVectorWidth());
     LLVMTypes::Int64VectorType = LLVMVECTOR::get(LLVMTypes::Int64Type, target.getVectorWidth());
+    LLVMTypes::Int128VectorType = LLVMVECTOR::get(LLVMTypes::Int128Type, target.getVectorWidth());
     LLVMTypes::Float16VectorType = LLVMVECTOR::get(LLVMTypes::Float16Type, target.getVectorWidth());
     LLVMTypes::FloatVectorType = LLVMVECTOR::get(LLVMTypes::FloatType, target.getVectorWidth());
     LLVMTypes::DoubleVectorType = LLVMVECTOR::get(LLVMTypes::DoubleType, target.getVectorWidth());
@@ -123,6 +130,10 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
     LLVMFalse = llvm::ConstantInt::getFalse(*ctx);
     LLVMTrueInStorage = llvm::ConstantInt::get(LLVMTypes::Int8Type, 0xff, false /*unsigned*/);
     LLVMFalseInStorage = llvm::ConstantInt::get(LLVMTypes::Int8Type, 0x00, false /*unsigned*/);
+
+    // TODO [zephyr111]: is the value properly signed like others and does this actually matters?
+    static const uint64_t i128_parts[2] = {0xffffffffffffffffull, 0xffffffffffffffffull};
+    static const llvm::APInt i128_allBitSet(128, llvm::ArrayRef(i128_parts, 2));
 
     std::vector<llvm::Constant *> maskOnes;
     llvm::Constant *onMask = nullptr;
@@ -141,6 +152,10 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
         break;
     case 64:
         onMask = llvm::ConstantInt::get(llvm::Type::getInt64Ty(*ctx), -1, true /*signed*/); // 0xffffffffffffffffull
+        break;
+    case 128:
+        // TODO [zephyr111]: is this OK? Does the above calls are ok for 128-bit types and the upper bits are correctly set?
+        onMask = llvm::ConstantInt::get(llvm::Type::getInt128Ty(*ctx), i128_allBitSet);
         break;
     default:
         FATAL("Unhandled mask width for onMask");
@@ -168,6 +183,9 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
         break;
     case 64:
         offMask = llvm::ConstantInt::get(llvm::Type::getInt64Ty(*ctx), 0, true /*signed*/);
+        break;
+    case 128:
+        offMask = llvm::ConstantInt::get(llvm::Type::getInt128Ty(*ctx), 0, true /*signed*/);
         break;
     default:
         FATAL("Unhandled mask width for offMask");
@@ -213,6 +231,14 @@ llvm::ConstantInt *LLVMInt64(int64_t ival) {
 
 llvm::ConstantInt *LLVMUInt64(uint64_t ival) {
     return llvm::ConstantInt::get(llvm::Type::getInt64Ty(*g->ctx), ival, false /*unsigned*/);
+}
+
+llvm::ConstantInt *LLVMInt128(__int128_t ival) {
+    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), ival, true /*signed*/);
+}
+
+llvm::ConstantInt *LLVMUInt128(__uint128_t ival) {
+    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), ival, false /*unsigned*/);
 }
 
 llvm::Constant *LLVMFloat16(llvm::APFloat fv) { return llvm::ConstantFP::get(llvm::Type::getHalfTy(*g->ctx), fv); }
@@ -425,9 +451,49 @@ llvm::Constant *LLVMUInt64Vector(const uint64_t *ivec) {
     return llvm::ConstantVector::get(vals);
 }
 
+llvm::Constant *LLVMInt128Vector(__int128_t ival) {
+    llvm::Constant *v = LLVMInt128(ival);
+    std::vector<llvm::Constant *> vals;
+    for (int i = 0; i < g->target->getVectorWidth(); ++i) {
+        vals.push_back(v);
+    }
+    return llvm::ConstantVector::get(vals);
+}
+
+llvm::Constant *LLVMInt128Vector(const __int128_t *ivec) {
+    std::vector<llvm::Constant *> vals;
+    for (int i = 0; i < g->target->getVectorWidth(); ++i) {
+        vals.push_back(LLVMInt128(ivec[i]));
+    }
+    return llvm::ConstantVector::get(vals);
+}
+
+llvm::Constant *LLVMUInt128Vector(__uint128_t ival) {
+    llvm::Constant *v = LLVMUInt128(ival);
+    std::vector<llvm::Constant *> vals;
+    for (int i = 0; i < g->target->getVectorWidth(); ++i) {
+        vals.push_back(v);
+    }
+    return llvm::ConstantVector::get(vals);
+}
+
+llvm::Constant *LLVMUInt128Vector(const __uint128_t *ivec) {
+    std::vector<llvm::Constant *> vals;
+    for (int i = 0; i < g->target->getVectorWidth(); ++i) {
+        vals.push_back(LLVMUInt128(ivec[i]));
+    }
+    return llvm::ConstantVector::get(vals);
+}
+
 llvm::Constant *LLVMBoolVector(bool b) {
     llvm::Constant *v = nullptr;
-    if (LLVMTypes::BoolVectorType == LLVMTypes::Int64VectorType) {
+    if (LLVMTypes::BoolVectorType == LLVMTypes::Int128VectorType) {
+        // TODO [zephyr111]: is this OK?
+        static const uint64_t bigVal[2] = {0xffffffffffffffffull, 0xffffffffffffffffull};
+        static const llvm::APInt allBitSet(128, llvm::ArrayRef(bigVal, 2));
+        static const llvm::APInt allBitZero(128, 0, false /*unsigned*/);
+        v = llvm::ConstantInt::get(LLVMTypes::Int128Type, b ? allBitSet : allBitZero);
+    } else if (LLVMTypes::BoolVectorType == LLVMTypes::Int64VectorType) {
         v = llvm::ConstantInt::get(LLVMTypes::Int64Type, b ? 0xffffffffffffffffull : 0, false /*unsigned*/);
     } else if (LLVMTypes::BoolVectorType == LLVMTypes::Int32VectorType) {
         v = llvm::ConstantInt::get(LLVMTypes::Int32Type, b ? 0xffffffff : 0, false /*unsigned*/);
@@ -451,7 +517,13 @@ llvm::Constant *LLVMBoolVector(const bool *bvec) {
     std::vector<llvm::Constant *> vals;
     for (int i = 0; i < g->target->getVectorWidth(); ++i) {
         llvm::Constant *v = nullptr;
-        if (LLVMTypes::BoolVectorType == LLVMTypes::Int64VectorType) {
+        if (LLVMTypes::BoolVectorType == LLVMTypes::Int128VectorType) {
+            // TODO [zephyr111]: is this OK?
+            static const uint64_t bigVal[2] = {0xffffffffffffffffull, 0xffffffffffffffffull};
+            static const llvm::APInt allBitSet(128, llvm::ArrayRef(bigVal, 2));
+            static const llvm::APInt allBitZero(128, 0, false /*unsigned*/);
+            v = llvm::ConstantInt::get(LLVMTypes::Int128Type, bvec[i] ? allBitSet : allBitZero);
+        } else if (LLVMTypes::BoolVectorType == LLVMTypes::Int64VectorType) {
             v = llvm::ConstantInt::get(LLVMTypes::Int64Type, bvec[i] ? 0xffffffffffffffffull : 0, false /*unsigned*/);
         } else if (LLVMTypes::BoolVectorType == LLVMTypes::Int32VectorType) {
             v = llvm::ConstantInt::get(LLVMTypes::Int32Type, bvec[i] ? 0xffffffff : 0, false /*unsigned*/);
@@ -487,7 +559,7 @@ llvm::Constant *LLVMBoolVectorInStorage(const bool *bvec) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMIntAsType(int64_t val, llvm::Type *type) {
+llvm::Constant *LLVMIntAsType(__int128_t val, llvm::Type *type) {
     llvm::FixedVectorType *vecType = llvm::dyn_cast<llvm::FixedVectorType>(type);
 
     if (vecType != nullptr) {
@@ -502,7 +574,7 @@ llvm::Constant *LLVMIntAsType(int64_t val, llvm::Type *type) {
     }
 }
 
-llvm::Constant *LLVMUIntAsType(uint64_t val, llvm::Type *type) {
+llvm::Constant *LLVMUIntAsType(__uint128_t val, llvm::Type *type) {
     llvm::FixedVectorType *vecType = llvm::dyn_cast<llvm::FixedVectorType>(type);
 
     if (vecType != nullptr) {
@@ -773,6 +845,7 @@ llvm::Value *LLVMFlattenInsertChain(llvm::Value *inst, int vectorWidth, bool com
     return nullptr;
 }
 
+// TODO [zephyr111]: should `ret` still be a 64-bit array?
 bool LLVMExtractVectorInts(llvm::Value *v, int64_t ret[], int *nElts) {
     // Make sure we do in fact have a vector of integer values here
     llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(v->getType());
@@ -886,6 +959,7 @@ static int lRoundUpPow2(int v) {
     does in fact have this property, but should never report a given value
     as being a multiple if it isn't!)
  */
+// TODO [zephyr111]: FIXME: `baseValue` should certainly be a 128-bit integer and the following function must certainly be modified!
 static bool lAllDivBaseEqual(llvm::Value *val, int64_t baseValue, int vectorLength,
                              std::vector<llvm::PHINode *> &seenPhis, bool &canAdd) {
     Assert(llvm::isa<llvm::VectorType>(val->getType()));
@@ -1016,6 +1090,7 @@ static bool lAllDivBaseEqual(llvm::Value *val, int64_t baseValue, int vectorLeng
     value (i.e. whether the high bits are all equal, disregarding the low
     bits that are shifted out.)  Returns true if so, and false otherwise.
  */
+// TODO [zephyr111]: FIXME: the following function must certainly be modified so to support 128-bit integers!
 static bool lVectorShiftRightAllEqual(llvm::Value *val, llvm::Value *shift, int vectorLength) {
     // Are we shifting all elements by a compile-time constant amount?  If
     // not, give up.
@@ -1220,6 +1295,7 @@ static bool lVectorIsLinear(llvm::Value *v, int vectorLength, int stride, std::v
     arbirary value but then having a step of value "stride" between
     elements.
  */
+// TODO [zephyr111]: should function be modified so to support 128-bit integers?
 static bool lVectorIsLinearConstantInts(llvm::ConstantDataVector *cv, int vectorLength, int stride) {
     // Flatten the vector out into the elements array
     llvm::SmallVector<llvm::Constant *, ISPC_MAX_NVEC> elements;
@@ -1258,6 +1334,7 @@ static bool lVectorIsLinearConstantInts(llvm::ConstantDataVector *cv, int vector
 /** Checks to see if (op0 * op1) is a linear vector where the result is a
     vector with values that increase by stride.
  */
+// TODO [zephyr111]: FIXME: the following function must certainly be modified so to support 128-bit integers!
 static bool lCheckMulForLinear(llvm::Value *op0, llvm::Value *op1, int vectorLength, int stride,
                                std::vector<llvm::PHINode *> &seenPhis) {
     // Is the first operand a constant integer value splatted across all of
@@ -1294,6 +1371,7 @@ static bool lCheckMulForLinear(llvm::Value *op0, llvm::Value *op1, int vectorLen
 /** Checks to see if (op0 << op1) is a linear vector where the result is a
     vector with values that increase by stride.
  */
+// TODO [zephyr111]: FIXME: the following function must certainly be modified so to support 128-bit integers!
 static bool lCheckShlForLinear(llvm::Value *op0, llvm::Value *op1, int vectorLength, int stride,
                                std::vector<llvm::PHINode *> &seenPhis) {
     // Is the second operand a constant integer value splatted across all of
@@ -1338,6 +1416,7 @@ static bool lCheckShlForLinear(llvm::Value *op0, llvm::Value *op1, int vectorLen
     if so and false otherwise.  This pattern comes up when accessing SOA
     data.
  */
+// TODO [zephyr111]: FIXME: the following function must certainly be modified so to support 128-bit integers!
 static bool lCheckAndForLinear(llvm::Value *op0, llvm::Value *op1, int vectorLength, int stride,
                                std::vector<llvm::PHINode *> &seenPhis) {
     // Require op1 to be a compile-time constant
@@ -1844,6 +1923,7 @@ llvm::GetElementPtrInst *LLVMGEPInst(llvm::Value *ptr, llvm::Type *ptrElType, ll
     execution mask, convert it to a bitvector where the 0th bit corresponds
     to the first vector value and so forth.
 */
+// TODO [zephyr111]: FIXME: the following function must certainly be modified so to support 128-bit integers!
 static uint64_t lConstElementsToMask(const llvm::SmallVector<llvm::Constant *, ISPC_MAX_NVEC> &elements) {
     Assert(elements.size() <= 64);
 

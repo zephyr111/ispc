@@ -161,15 +161,15 @@ static const char *lBuiltinTokens[] = {
     "do", "delete", "double", "else", "enum", "export", "extern", "false",
     "float16", "float", "for", "foreach", "foreach_active", "foreach_tiled",
     "foreach_unique", "goto", "if", "in", "inline",
-    "int", "int8", "int16", "int32", "int64", "invoke_sycl", "launch", "new", "NULL",
-    "print", "return", "signed", "sizeof", "static", "struct", "switch",
-    "sync", "task", "true", "typedef", "uniform", "unmasked", "unsigned",
-    "varying", "void", "while", "__attribute__", NULL
+    "int", "int8", "int16", "int32", "int64", "int128", "invoke_sycl", "launch",
+    "new", "NULL", "print", "return", "signed", "sizeof", "static", "struct",
+    "switch", "sync", "task", "true", "typedef", "uniform", "unmasked", 
+    "unsigned", "varying", "void", "while", "__attribute__", NULL
 };
 
 static const char *lParamListTokens[] = {
     "bool", "const", "double", "enum", "false", "float16", "float", "int",
-    "int8", "int16", "int32", "int64", "signed", "struct", "true",
+    "int8", "int16", "int32", "int64", "int128", "signed", "struct", "true",
     "uniform", "unsigned", "varying", "void", "__attribute__", NULL
 };
 
@@ -186,7 +186,7 @@ struct ForeachDimension {
 %}
 
 %union {
-    uint64_t intVal;
+    __uint128_t intVal;
     float  floatVal;
     double doubleVal;
     std::string *stringVal;
@@ -232,8 +232,10 @@ struct ForeachDimension {
 %token TOKEN_INT16_CONSTANT TOKEN_UINT16_CONSTANT
 %token TOKEN_INT32_CONSTANT TOKEN_UINT32_CONSTANT
 %token TOKEN_INT64_CONSTANT TOKEN_UINT64_CONSTANT
+%token TOKEN_INT128_CONSTANT TOKEN_UINT128_CONSTANT
 %token TOKEN_INT32DOTDOTDOT_CONSTANT TOKEN_UINT32DOTDOTDOT_CONSTANT
 %token TOKEN_INT64DOTDOTDOT_CONSTANT TOKEN_UINT64DOTDOTDOT_CONSTANT
+%token TOKEN_INT128DOTDOTDOT_CONSTANT TOKEN_UINT128DOTDOTDOT_CONSTANT
 %token <stringVal> TOKEN_FLOAT16_CONSTANT
 %token TOKEN_FLOAT_CONSTANT TOKEN_DOUBLE_CONSTANT TOKEN_STRING_C_LITERAL TOKEN_STRING_SYCL_LITERAL
 %token <stringVal> TOKEN_IDENTIFIER TOKEN_STRING_LITERAL TOKEN_TYPE_NAME
@@ -251,8 +253,8 @@ struct ForeachDimension {
 %token TOKEN_EXTERN TOKEN_EXPORT TOKEN_STATIC TOKEN_INLINE TOKEN_NOINLINE TOKEN_VECTORCALL TOKEN_REGCALL TOKEN_TASK TOKEN_DECLSPEC
 %token TOKEN_UNIFORM TOKEN_VARYING TOKEN_TYPEDEF TOKEN_SOA TOKEN_UNMASKED
 %token TOKEN_INT TOKEN_SIGNED TOKEN_UNSIGNED TOKEN_FLOAT16 TOKEN_FLOAT TOKEN_DOUBLE
-%token TOKEN_INT8 TOKEN_INT16 TOKEN_INT64 TOKEN_CONST TOKEN_VOID TOKEN_BOOL
-%token TOKEN_UINT8 TOKEN_UINT16 TOKEN_UINT TOKEN_UINT64
+%token TOKEN_INT8 TOKEN_INT16 TOKEN_INT64 TOKEN_INT128 TOKEN_CONST TOKEN_VOID TOKEN_BOOL
+%token TOKEN_UINT8 TOKEN_UINT16 TOKEN_UINT TOKEN_UINT64 TOKEN_UINT128
 %token TOKEN_ENUM TOKEN_STRUCT TOKEN_TRUE TOKEN_FALSE
 
 %token TOKEN_CASE TOKEN_DEFAULT TOKEN_IF TOKEN_ELSE TOKEN_SWITCH
@@ -343,6 +345,7 @@ struct ForeachDimension {
 // e.g., tests/lit-tests/2599.ispc
 
 // Print semantic values for debugging (under --yydebug)
+// TODO [zephyr111]: FIXME: implement 128-bit integer formatting (similar to the C++ stringstream code in expr.cpp)
 %printer { fprintf(yyo, "%s", SAFE_ACCESS($$, c_str())); } <stringVal>
 %printer { fprintf(yyo, "%s", $$); } <constCharPtr>
 %printer { fprintf(yyo, "%" PRIu64, $$); } <intVal>
@@ -530,6 +533,14 @@ primary_expression
     | TOKEN_UINT64_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformUInt64->GetAsConstType(),
                            (uint64_t)yylval.intVal, @1);
+    }
+    | TOKEN_INT128_CONSTANT {
+        $$ = new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
+                           (__int128_t)yylval.intVal, @1);
+    }
+    | TOKEN_UINT128_CONSTANT {
+        $$ = new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
+                           (__uint128_t)yylval.intVal, @1);
     }
     | TOKEN_FLOAT16_CONSTANT {
          std::string sval = *$1;
@@ -1466,6 +1477,8 @@ atomic_var_type_specifier
     | TOKEN_DOUBLE  { $$ = AtomicType::UniformDouble->GetAsUnboundVariabilityType(); }
     | TOKEN_INT64   { $$ = AtomicType::UniformInt64->GetAsUnboundVariabilityType(); }
     | TOKEN_UINT64  { $$ = AtomicType::UniformUInt64->GetAsUnboundVariabilityType(); }
+    | TOKEN_INT128  { $$ = AtomicType::UniformInt128->GetAsUnboundVariabilityType(); }
+    | TOKEN_UINT128 { $$ = AtomicType::UniformUInt128->GetAsUnboundVariabilityType(); }
     ;
 
 short_vec_specifier
@@ -1955,6 +1968,8 @@ int_constant
     | TOKEN_UINT32_CONSTANT { $$ = yylval.intVal; }
     | TOKEN_INT64_CONSTANT { $$ = yylval.intVal; }
     | TOKEN_UINT64_CONSTANT { $$ = yylval.intVal; }
+    | TOKEN_INT128_CONSTANT { $$ = yylval.intVal; }
+    | TOKEN_UINT128_CONSTANT { $$ = yylval.intVal; }
     ;
 
 direct_declarator
@@ -2551,6 +2566,7 @@ foreach_active_scope
 foreach_active_identifier
     : TOKEN_IDENTIFIER
     {
+        // TODO [zephyr111]: should we use 128-bit here or check the number is small enough?
         $$ = new Symbol(yytext, @1, Symbol::SymbolKind::Variable, AtomicType::UniformInt64->GetAsConstType());
         lCleanUpString($1);
     }
@@ -2572,6 +2588,14 @@ integer_dotdotdot
     | TOKEN_UINT64DOTDOTDOT_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformUInt64->GetAsConstType(),
                            (uint64_t)yylval.intVal, @1);
+    }
+    | TOKEN_INT128DOTDOTDOT_CONSTANT {
+        $$ = new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
+                           (__int128_t)yylval.intVal, @1);
+    }
+    | TOKEN_UINT128DOTDOTDOT_CONSTANT {
+        $$ = new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
+                           (__uint128_t)yylval.intVal, @1);
     }
     ;
 
@@ -2903,15 +2927,17 @@ template_type_parameter
     ;
 
 int_constant_type
-    : TOKEN_INT8   { $$ = AtomicType::UniformInt8->GetAsConstType(); }
-    | TOKEN_INT16  { $$ = AtomicType::UniformInt16->GetAsConstType(); }
-    | TOKEN_INT    { $$ = AtomicType::UniformInt32->GetAsConstType(); }
-    | TOKEN_INT64  { $$ = AtomicType::UniformInt64->GetAsConstType(); }
-    | TOKEN_UINT8  { $$ = AtomicType::UniformUInt8->GetAsConstType(); }
-    | TOKEN_UINT16 { $$ = AtomicType::UniformUInt16->GetAsConstType(); }
-    | TOKEN_UINT   { $$ = AtomicType::UniformUInt32->GetAsConstType(); }
-    | TOKEN_UINT64 { $$ = AtomicType::UniformUInt64->GetAsConstType(); }
-    | TOKEN_BOOL   { $$ = AtomicType::UniformBool->GetAsConstType(); }
+    : TOKEN_INT8    { $$ = AtomicType::UniformInt8->GetAsConstType(); }
+    | TOKEN_INT16   { $$ = AtomicType::UniformInt16->GetAsConstType(); }
+    | TOKEN_INT     { $$ = AtomicType::UniformInt32->GetAsConstType(); }
+    | TOKEN_INT64   { $$ = AtomicType::UniformInt64->GetAsConstType(); }
+    | TOKEN_INT128  { $$ = AtomicType::UniformInt128->GetAsConstType(); }
+    | TOKEN_UINT8   { $$ = AtomicType::UniformUInt8->GetAsConstType(); }
+    | TOKEN_UINT16  { $$ = AtomicType::UniformUInt16->GetAsConstType(); }
+    | TOKEN_UINT    { $$ = AtomicType::UniformUInt32->GetAsConstType(); }
+    | TOKEN_UINT64  { $$ = AtomicType::UniformUInt64->GetAsConstType(); }
+    | TOKEN_UINT128 { $$ = AtomicType::UniformUInt128->GetAsConstType(); }
+    | TOKEN_BOOL    { $$ = AtomicType::UniformBool->GetAsConstType(); }
     ;
 
 template_int_constant_type
@@ -3095,6 +3121,14 @@ template_argument
     | TOKEN_UINT64_CONSTANT {
         $$ = new TemplateArg(new ConstExpr(AtomicType::UniformUInt64->GetAsConstType(),
                            (uint64_t)yylval.intVal, @1), @1);
+    }
+    | TOKEN_INT128_CONSTANT {
+        $$ = new TemplateArg(new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
+                           (__int128_t)yylval.intVal, @1), @1);
+    }
+    | TOKEN_UINT128_CONSTANT {
+        $$ = new TemplateArg(new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
+                           (__uint128_t)yylval.intVal, @1), @1);
     }
     | TOKEN_TRUE {
         $$ = new TemplateArg(new ConstExpr(AtomicType::UniformBool->GetAsConstType(), true, @1), @1);

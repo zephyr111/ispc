@@ -790,6 +790,8 @@ static llvm::CallInst *lGSToGSBaseOffsets(llvm::CallInst *callInst) {
          GSInfo::Gather(__pseudo_gather_base_offsets32_float, __pseudo_gather_factored_base_offsets32_float)},
         {__pseudo_gather32_i64,
          GSInfo::Gather(__pseudo_gather_base_offsets32_i64, __pseudo_gather_factored_base_offsets32_i64)},
+        {__pseudo_gather32_i128,
+         GSInfo::Gather(__pseudo_gather_base_offsets32_i128, __pseudo_gather_factored_base_offsets32_i128)},
         {__pseudo_gather32_double,
          GSInfo::Gather(__pseudo_gather_base_offsets32_double, __pseudo_gather_factored_base_offsets32_double)},
         {__pseudo_scatter32_i8,
@@ -804,6 +806,8 @@ static llvm::CallInst *lGSToGSBaseOffsets(llvm::CallInst *callInst) {
          GSInfo::Scatter(__pseudo_scatter_base_offsets32_float, __pseudo_scatter_factored_base_offsets32_float)},
         {__pseudo_scatter32_i64,
          GSInfo::Scatter(__pseudo_scatter_base_offsets32_i64, __pseudo_scatter_factored_base_offsets32_i64)},
+        {__pseudo_scatter32_i128,
+         GSInfo::Scatter(__pseudo_scatter_base_offsets32_i128, __pseudo_scatter_factored_base_offsets32_i128)},
         {__pseudo_scatter32_double,
          GSInfo::Scatter(__pseudo_scatter_base_offsets32_double, __pseudo_scatter_factored_base_offsets32_double)},
         {__pseudo_gather64_i8,
@@ -824,6 +828,9 @@ static llvm::CallInst *lGSToGSBaseOffsets(llvm::CallInst *callInst) {
         {__pseudo_gather64_i64,
          GSInfo::Gather(__pseudo_gather_base_offsets64_i64, __pseudo_gather_factored_base_offsets64_i64,
                         __pseudo_gather_base_offsets32_i64, __pseudo_gather_factored_base_offsets32_i64)},
+        {__pseudo_gather64_i128,
+         GSInfo::Gather(__pseudo_gather_base_offsets64_i128, __pseudo_gather_factored_base_offsets64_i128,
+                        __pseudo_gather_base_offsets32_i128, __pseudo_gather_factored_base_offsets32_i128)},
         {__pseudo_gather64_double,
          GSInfo::Gather(__pseudo_gather_base_offsets64_double, __pseudo_gather_factored_base_offsets64_double,
                         __pseudo_gather_base_offsets32_double, __pseudo_gather_factored_base_offsets32_double)},
@@ -845,6 +852,9 @@ static llvm::CallInst *lGSToGSBaseOffsets(llvm::CallInst *callInst) {
         {__pseudo_scatter64_i64,
          GSInfo::Scatter(__pseudo_scatter_base_offsets64_i64, __pseudo_scatter_factored_base_offsets64_i64,
                          __pseudo_scatter_base_offsets32_i64, __pseudo_scatter_factored_base_offsets32_i64)},
+        {__pseudo_scatter64_i128,
+         GSInfo::Scatter(__pseudo_scatter_base_offsets64_i128, __pseudo_scatter_factored_base_offsets64_i128,
+                         __pseudo_scatter_base_offsets32_i128, __pseudo_scatter_factored_base_offsets32_i128)},
         {__pseudo_scatter64_double,
          GSInfo::Scatter(__pseudo_scatter_base_offsets64_double, __pseudo_scatter_factored_base_offsets64_double,
                          __pseudo_scatter_base_offsets32_double, __pseudo_scatter_factored_base_offsets32_double)},
@@ -1004,6 +1014,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_gather_base_offsets64_i32, 1},
         {__pseudo_gather_base_offsets64_float, 1},
         {__pseudo_gather_base_offsets64_i64, 1},
+        {__pseudo_gather_base_offsets64_i128, 1},
         {__pseudo_gather_base_offsets64_double, 1},
         {__pseudo_gather_base_offsets32_i8, 1},
         {__pseudo_gather_base_offsets32_i16, 1},
@@ -1011,6 +1022,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_gather_base_offsets32_i32, 1},
         {__pseudo_gather_base_offsets32_float, 1},
         {__pseudo_gather_base_offsets32_i64, 1},
+        {__pseudo_gather_base_offsets32_i128, 1},
         {__pseudo_gather_base_offsets32_double, 1},
         {__pseudo_gather_factored_base_offsets64_i8, 1},
         {__pseudo_gather_factored_base_offsets64_i16, 1},
@@ -1018,6 +1030,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets64_i32, 1},
         {__pseudo_gather_factored_base_offsets64_float, 1},
         {__pseudo_gather_factored_base_offsets64_i64, 1},
+        {__pseudo_gather_factored_base_offsets64_i128, 1},
         {__pseudo_gather_factored_base_offsets64_double, 1},
         {__pseudo_gather_factored_base_offsets32_i8, 1},
         {__pseudo_gather_factored_base_offsets32_i16, 1},
@@ -1025,6 +1038,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets32_i32, 1},
         {__pseudo_gather_factored_base_offsets32_float, 1},
         {__pseudo_gather_factored_base_offsets32_i64, 1},
+        {__pseudo_gather_factored_base_offsets32_i128, 1},
         {__pseudo_gather_factored_base_offsets32_double, 1},
         {__pseudo_scatter_base_offsets64_i8, 1},
         {__pseudo_scatter_base_offsets64_i16, 1},
@@ -1032,6 +1046,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_scatter_base_offsets64_i32, 1},
         {__pseudo_scatter_base_offsets64_float, 1},
         {__pseudo_scatter_base_offsets64_i64, 1},
+        {__pseudo_scatter_base_offsets64_i128, 1},
         {__pseudo_scatter_base_offsets64_double, 1},
         {__pseudo_scatter_base_offsets32_i8, 1},
         {__pseudo_scatter_base_offsets32_i16, 1},
@@ -1039,6 +1054,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_scatter_base_offsets32_i32, 1},
         {__pseudo_scatter_base_offsets32_float, 1},
         {__pseudo_scatter_base_offsets32_i64, 1},
+        {__pseudo_scatter_base_offsets32_i128, 1},
         {__pseudo_scatter_base_offsets32_double, 1},
         {__pseudo_scatter_factored_base_offsets64_i8, 1},
         {__pseudo_scatter_factored_base_offsets64_i16, 1},
@@ -1046,6 +1062,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets64_i32, 1},
         {__pseudo_scatter_factored_base_offsets64_float, 1},
         {__pseudo_scatter_factored_base_offsets64_i64, 1},
+        {__pseudo_scatter_factored_base_offsets64_i128, 1},
         {__pseudo_scatter_factored_base_offsets64_double, 1},
         {__pseudo_scatter_factored_base_offsets32_i8, 1},
         {__pseudo_scatter_factored_base_offsets32_i16, 1},
@@ -1053,6 +1070,7 @@ static llvm::CallInst *lGSBaseOffsetsGetMoreConst(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets32_i32, 1},
         {__pseudo_scatter_factored_base_offsets32_float, 1},
         {__pseudo_scatter_factored_base_offsets32_i64, 1},
+        {__pseudo_scatter_factored_base_offsets32_i128, 1},
         {__pseudo_scatter_factored_base_offsets32_double, 1},
         {__pseudo_prefetch_read_varying_1_native, 1},
         {__pseudo_prefetch_read_varying_2_native, 1},
@@ -1271,6 +1289,8 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
         GatherImpInfo(__masked_load_float, __masked_load_blend_float, &LLVMTypes::FloatType, Alignment::A4);
     static GatherImpInfo GII_i64 =
         GatherImpInfo(__masked_load_i64, __masked_load_blend_i64, &LLVMTypes::Int64Type, Alignment::A8);
+    static GatherImpInfo GII_i128 =
+        GatherImpInfo(__masked_load_i128, __masked_load_blend_i128, &LLVMTypes::Int128Type, Alignment::A16);
     static GatherImpInfo GII_double =
         GatherImpInfo(__masked_load_double, __masked_load_blend_double, &LLVMTypes::DoubleType, Alignment::A8);
 
@@ -1287,6 +1307,8 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets32_float, &GII_float},
         {__pseudo_gather_base_offsets32_i64, &GII_i64},
         {__pseudo_gather_factored_base_offsets32_i64, &GII_i64},
+        {__pseudo_gather_base_offsets32_i128, &GII_i128},
+        {__pseudo_gather_factored_base_offsets32_i128, &GII_i128},
         {__pseudo_gather_base_offsets32_double, &GII_double},
         {__pseudo_gather_factored_base_offsets32_double, &GII_double},
         {__pseudo_gather_base_offsets64_i8, &GII_i8},
@@ -1301,6 +1323,8 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
         {__pseudo_gather_factored_base_offsets64_float, &GII_float},
         {__pseudo_gather_base_offsets64_i64, &GII_i64},
         {__pseudo_gather_factored_base_offsets64_i64, &GII_i64},
+        {__pseudo_gather_base_offsets64_i128, &GII_i128},
+        {__pseudo_gather_factored_base_offsets64_i128, &GII_i128},
         {__pseudo_gather_base_offsets64_double, &GII_double},
         {__pseudo_gather_factored_base_offsets64_double, &GII_double},
     };
@@ -1311,6 +1335,7 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
     static ScatterImpInfo SII_i32 = ScatterImpInfo(__pseudo_masked_store_i32, &LLVMTypes::Int32Type, Alignment::A4);
     static ScatterImpInfo SII_float = ScatterImpInfo(__pseudo_masked_store_float, &LLVMTypes::FloatType, Alignment::A4);
     static ScatterImpInfo SII_i64 = ScatterImpInfo(__pseudo_masked_store_i64, &LLVMTypes::Int64Type, Alignment::A8);
+    static ScatterImpInfo SII_i128 = ScatterImpInfo(__pseudo_masked_store_i128, &LLVMTypes::Int128Type, Alignment::A16);
     static ScatterImpInfo SII_double =
         ScatterImpInfo(__pseudo_masked_store_double, &LLVMTypes::DoubleType, Alignment::A8);
 
@@ -1327,6 +1352,8 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets32_float, &SII_float},
         {__pseudo_scatter_base_offsets32_i64, &SII_i64},
         {__pseudo_scatter_factored_base_offsets32_i64, &SII_i64},
+        {__pseudo_scatter_base_offsets32_i128, &SII_i128},
+        {__pseudo_scatter_factored_base_offsets32_i128, &SII_i128},
         {__pseudo_scatter_base_offsets32_double, &SII_double},
         {__pseudo_scatter_factored_base_offsets32_double, &SII_double},
         {__pseudo_scatter_base_offsets64_i8, &SII_i8},
@@ -1341,6 +1368,8 @@ static llvm::Instruction *lGSToLoadStore(llvm::CallInst *callInst) {
         {__pseudo_scatter_factored_base_offsets64_float, &SII_float},
         {__pseudo_scatter_base_offsets64_i64, &SII_i64},
         {__pseudo_scatter_factored_base_offsets64_i64, &SII_i64},
+        {__pseudo_scatter_base_offsets64_i128, &SII_i128},
+        {__pseudo_scatter_factored_base_offsets64_i128, &SII_i128},
         {__pseudo_scatter_base_offsets64_double, &SII_double},
         {__pseudo_scatter_factored_base_offsets64_double, &SII_double},
     };
@@ -1580,6 +1609,7 @@ static llvm::Value *lImproveMaskedStore(llvm::CallInst *callInst) {
         {__pseudo_masked_store_i32, Alignment::A4},
         {__pseudo_masked_store_float, Alignment::A4},
         {__pseudo_masked_store_i64, Alignment::A8},
+        {__pseudo_masked_store_i128, Alignment::A16},
         {__pseudo_masked_store_double, Alignment::A8},
         {__masked_store_blend_i8, Alignment::A1},
         {__masked_store_blend_i16, Alignment::A2},
@@ -1587,6 +1617,7 @@ static llvm::Value *lImproveMaskedStore(llvm::CallInst *callInst) {
         {__masked_store_blend_i32, Alignment::A4},
         {__masked_store_blend_float, Alignment::A4},
         {__masked_store_blend_i64, Alignment::A8},
+        {__masked_store_blend_i128, Alignment::A16},
         {__masked_store_blend_double, Alignment::A8},
         {__masked_store_i8, Alignment::A1},
         {__masked_store_i16, Alignment::A2},
@@ -1594,6 +1625,7 @@ static llvm::Value *lImproveMaskedStore(llvm::CallInst *callInst) {
         {__masked_store_i32, Alignment::A4},
         {__masked_store_float, Alignment::A4},
         {__masked_store_i64, Alignment::A8},
+        {__masked_store_i128, Alignment::A16},
         {__masked_store_double, Alignment::A8},
     };
 
@@ -1658,10 +1690,12 @@ static llvm::Value *lImproveMaskedLoad(llvm::CallInst *callInst, llvm::BasicBloc
         {__masked_load_i8, Alignment::A1},        {__masked_load_i16, Alignment::A2},
         {__masked_load_half, Alignment::A2},      {__masked_load_i32, Alignment::A4},
         {__masked_load_float, Alignment::A4},     {__masked_load_i64, Alignment::A8},
+        {__masked_load_i128, Alignment::A16},
         {__masked_load_double, Alignment::A8},    {__masked_load_blend_i8, Alignment::A1},
         {__masked_load_blend_i16, Alignment::A2}, {__masked_load_blend_half, Alignment::A2},
         {__masked_load_blend_i32, Alignment::A4}, {__masked_load_blend_float, Alignment::A4},
         {__masked_load_blend_i64, Alignment::A8}, {__masked_load_blend_double, Alignment::A8},
+        {__masked_load_blend_i128, Alignment::A16},
     };
 
     llvm::Function *called = callInst->getCalledFunction();

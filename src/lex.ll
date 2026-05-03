@@ -17,7 +17,7 @@
 using namespace ispc;
 #include "parse.hh"
 
-static uint64_t lParseBinary(const char *ptr, SourcePos pos, char **endPtr);
+static __uint128_t lParseBinary(const char *ptr, SourcePos pos, char **endPtr);
 static int lParseInteger(bool dotdotdot);
 static int lParseFP();
 static int lParseOperator(const char *ptr);
@@ -89,6 +89,8 @@ void ParserInit() {
     tokenToName[TOKEN_INT] = "int";
     tokenToName[TOKEN_INT64] = "int64";
     tokenToName[TOKEN_UINT64] = "uint64";
+    tokenToName[TOKEN_INT128] = "int128";
+    tokenToName[TOKEN_UINT128] = "uint128";
     tokenToName[TOKEN_LAUNCH] = "launch";
     tokenToName[TOKEN_INVOKE_SYCL] = "invoke_sycl";
     tokenToName[TOKEN_ATTRIBUTE] = "__attribute__";
@@ -129,6 +131,8 @@ void ParserInit() {
     tokenToName[TOKEN_UINT32_CONSTANT] = "TOKEN_UINT32_CONSTANT";
     tokenToName[TOKEN_INT64_CONSTANT] = "TOKEN_INT64_CONSTANT";
     tokenToName[TOKEN_UINT64_CONSTANT] = "TOKEN_UINT64_CONSTANT";
+    tokenToName[TOKEN_INT128_CONSTANT] = "TOKEN_INT128_CONSTANT";
+    tokenToName[TOKEN_UINT128_CONSTANT] = "TOKEN_UINT128_CONSTANT";
     tokenToName[TOKEN_INC_OP] = "++";
     tokenToName[TOKEN_DEC_OP] = "--";
     tokenToName[TOKEN_LEFT_OP] = "<<";
@@ -219,6 +223,8 @@ void ParserInit() {
     tokenNameRemap["TOKEN_INT"] = "\'int\'";
     tokenNameRemap["TOKEN_INT64"] = "\'int64\'";
     tokenNameRemap["TOKEN_UINT64"] = "\'uint64\'";
+    tokenNameRemap["TOKEN_INT128"] = "\'int128\'";
+    tokenNameRemap["TOKEN_UINT128"] = "\'uint128\'";
     tokenNameRemap["TOKEN_LAUNCH"] = "\'launch\'";
     tokenNameRemap["TOKEN_INVOKE_SYCL"] = "\'invoke_sycl\'";
     tokenNameRemap["TOKEN_ATTRIBUTE"] = "\'__attribute__\'";
@@ -259,6 +265,8 @@ void ParserInit() {
     tokenNameRemap["TOKEN_UINT32_CONSTANT"] = "unsigned int32 constant";
     tokenNameRemap["TOKEN_INT64_CONSTANT"] = "int64 constant";
     tokenNameRemap["TOKEN_UINT64_CONSTANT"] = "unsigned int64 constant";
+    tokenNameRemap["TOKEN_INT128_CONSTANT"] = "int128 constant";
+    tokenNameRemap["TOKEN_UINT128_CONSTANT"] = "unsigned int128 constant";
     tokenNameRemap["TOKEN_INC_OP"] = "\'++\'";
     tokenNameRemap["TOKEN_DEC_OP"] = "\'--\'";
     tokenNameRemap["TOKEN_LEFT_OP"] = "\'<<\'";
@@ -363,6 +371,8 @@ int32 { return TOKEN_INT; }
 uint32 { return TOKEN_UINT; }
 int64 { return TOKEN_INT64; }
 uint64 { return TOKEN_UINT64; }
+int128 { return TOKEN_INT128; }
+uint128 { return TOKEN_UINT128; }
 launch { return TOKEN_LAUNCH; }
 invoke_sycl { return TOKEN_INVOKE_SYCL; }
 __attribute__ { return TOKEN_ATTRIBUTE; }
@@ -581,15 +591,16 @@ L?\"(\\.|[^\\"])*\" { lStringConst(&yylval, &yylloc); return TOKEN_STRING_LITERA
 
 /** Return the integer version of a binary constant from a string.
  */
-static uint64_t
+static __uint128_t
 lParseBinary(const char *ptr, SourcePos pos, char **endPtr) {
-    uint64_t val = 0;
+    __uint128_t val = 0;
     bool warned = false;
 
+    // TODO [zephyr111]: optimize this by parsing 64-bit numbers and fallback on 128-bit integers only if they are too big
     while (*ptr == '0' || *ptr == '1') {
-        if ((val & (((int64_t)1)<<63)) && warned == false) {
+        if ((val & (((__int128_t)1)<<127)) && warned == false) {
             // We're about to shift out a set bit
-            Warning(pos, "Can't represent binary constant with a 64-bit integer type");
+            Warning(pos, "Can't represent binary constant with a 128-bit integer type");
             warned = true;
         }
 
@@ -609,6 +620,7 @@ lParseInteger(bool dotdotdot) {
     if (yytext[0] == '0' && yytext[1] == 'b')
         yylval.intVal = lParseBinary(yytext+2, yylloc, &endPtr);
     else {
+        // TODO [zephyr111]: FIXME: support reading 128-bit integers
 #if defined(ISPC_HOST_IS_WINDOWS) && !defined(__MINGW32__)
         yylval.intVal = _strtoui64(yytext, &endPtr, 0);
 #else
@@ -640,17 +652,21 @@ lParseInteger(bool dotdotdot) {
     if (giga)
         yylval.intVal *= 1024*1024*1024;
 
+    // TODO [zephyr111]: should we support a "lll" suffix?
     if (dotdotdot) {
         if (ls >= 2)
             return us ? TOKEN_UINT64DOTDOTDOT_CONSTANT : TOKEN_INT64DOTDOTDOT_CONSTANT;
         else if (ls == 1)
             return us ? TOKEN_UINT32DOTDOTDOT_CONSTANT : TOKEN_INT32DOTDOTDOT_CONSTANT;
 
-        // See if we can fit this into a 32-bit integer...
+        // See if we can fit this into a 32-bit integer and
+        // then, the same thing for 64-bit integers...
         if ((yylval.intVal & 0xffffffff) == yylval.intVal)
             return us ? TOKEN_UINT32DOTDOTDOT_CONSTANT : TOKEN_INT32DOTDOTDOT_CONSTANT;
-        else
+        else if ((yylval.intVal & 0xffffffffffffffffll) == yylval.intVal)
             return us ? TOKEN_UINT64DOTDOTDOT_CONSTANT : TOKEN_INT64DOTDOTDOT_CONSTANT;
+        else
+            return us ? TOKEN_UINT128DOTDOTDOT_CONSTANT : TOKEN_INT128DOTDOTDOT_CONSTANT;
     }
     else {
         if (ls >= 2)
@@ -661,8 +677,10 @@ lParseInteger(bool dotdotdot) {
             // u suffix only
             if (yylval.intVal <= 0xffffffffL)
                 return TOKEN_UINT32_CONSTANT;
-            else
+            else if (yylval.intVal <= 0xffffffffffffffffL)
                 return TOKEN_UINT64_CONSTANT;
+            else
+                return TOKEN_UINT128_CONSTANT;
         }
         else {
             // No u or l suffix
@@ -688,8 +706,12 @@ lParseInteger(bool dotdotdot) {
                 return TOKEN_UINT32_CONSTANT;
             else if (yylval.intVal <= 0x7fffffffffffffffULL)
                 return TOKEN_INT64_CONSTANT;
-            else
+            else if (yylval.intVal <= (__uint128_t)0xffffffffffffffffULL)
                 return TOKEN_UINT64_CONSTANT;
+            else if (yylval.intVal <= ((((__uint128_t)0x7fffffffffffffffULL) << 64ull) | 0xffffffffffffffffULL))
+                return TOKEN_INT128_CONSTANT;
+            else
+                return TOKEN_UINT128_CONSTANT;
         }
     }
 }
@@ -781,6 +803,7 @@ static void lPragmaUnroll(YYSTYPE *yylval, SourcePos *pos, std::string fromUserR
         ++pos->last_column;
     }
 
+    // TODO [zephyr111]: FIXME: same thing here: support reading 128-bit integers
     char *endPtr = nullptr;
 #if defined(ISPC_HOST_IS_WINDOWS) && !defined(__MINGW32__)
     count = _strtoui64(currChar, &endPtr, 0);

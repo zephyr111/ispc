@@ -197,11 +197,11 @@ typedef unsigned int PerfWarningTypeUnderlyingType;
 /** An enum to represent different types of perfarmance warnings that should be triggered for specific target */
 enum class PerfWarningType : PerfWarningTypeUnderlyingType {
     // x86, SSE2/SSE4/AVX/AVX2.
-    // Converts between [float|double] and uint[32|64] types (both directions) are much more expensive than similar
+    // Converts between [float|double] and uint[32|64|128] types (both directions) are much more expensive than similar
     // converts involving signed integers.
     CVTUIntFloat = 0x1,
     // x86, AVX2.
-    // Converts between float16 and uint[32|64] types (both directions) are much more expensive than similar
+    // Converts between float16 and uint[32|64|128] types (both directions) are much more expensive than similar
     // converts involving signed integers.
     // SSE2/SSE4/AVX does not warn about FP16, as it is extreamly slow due to emulation of any FP16 ops.
     CVTUIntFloat16 = 0x2,
@@ -490,7 +490,7 @@ class Target {
         --opt=force-aligned-memory is used. */
     int m_nativeVectorAlignment;
 
-    /** Data type width in bits. Typically it's 32, but could be 8, 16 or 64. */
+    /** Data type width in bits. Typically it's 32, but could be 8, 16, 64 or 128. */
     int m_dataTypeWidth;
 
     /** Actual vector width currently being compiled to.  This may be an
