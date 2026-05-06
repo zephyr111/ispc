@@ -102,9 +102,9 @@ extern llvm::ConstantInt *LLVMInt64(int64_t i);
 /** Returns an LLVM i64 constant of the given value */
 extern llvm::ConstantInt *LLVMUInt64(uint64_t i);
 /** Returns an LLVM i128 constant of the given value */
-extern llvm::ConstantInt *LLVMInt128(__int128_t i);
+extern llvm::Constant *LLVMInt128(__int128_t i);
 /** Returns an LLVM i128 constant of the given value */
-extern llvm::ConstantInt *LLVMUInt128(__uint128_t i);
+extern llvm::Constant *LLVMUInt128(__uint128_t i);
 /** Returns an LLVM half constant of the given value */
 extern llvm::Constant *LLVMFloat16(llvm::APFloat f);
 /** Returns an LLVM float constant of the given value */

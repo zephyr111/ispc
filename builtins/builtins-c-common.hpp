@@ -18,10 +18,76 @@
 
 #include "src/builtins-info.h"
 
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+
 namespace details {
 template <typename T> inline T ValueAdapterImpl(T val) { return val; }
 
 static inline const char *ValueAdapterImpl(bool val) { return val ? "true" : "false"; }
+
+// TODO [zephyr111]: to be implemented more efficiently...
+// TODO [zephyr111]: FIXME: test this code carefully!
+
+static inline __int128_t Int128Abs(__int128_t v) {
+    return v < 0 ? -v : v;
+}
+
+static inline const char* ValueAdapterImpl(__int128_t v) {
+    const int64_t val_1e18 = 1000000000000000000ll;
+    const __int128_t val_1e36 = (__int128_t)val_1e18 * val_1e18;
+    thread_local char buff[64];
+
+    if(-val_1e18 < v && v < val_1e18) {
+        sprintf(buff, "%" PRId64, (int64_t)v);
+        return buff;
+    }
+
+    if(-val_1e36 < v && v < val_1e36) {
+        const __int128_t hi = v / val_1e18;
+        const __int128_t lo = Int128Abs(v - hi * val_1e18);
+        sprintf(buff, "%" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)lo);
+    }
+    else {
+        const __int128_t hi = v / val_1e36;
+        const __int128_t tmp = Int128Abs(v - hi * val_1e36);
+        const __int128_t mi = tmp / val_1e18;
+        const __int128_t lo = tmp % val_1e18;
+        sprintf(buff, "%" PRId64 "%018" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)mi, (int64_t)lo);
+    }
+
+    return buff;
+}
+
+static inline const char* ValueAdapterImpl(__uint128_t v) {
+    const uint64_t val_1e18 = 1000000000000000000ull;
+    const __uint128_t val_1e36 = (__uint128_t)val_1e18 * val_1e18;
+    thread_local char buff[64];
+
+    if(v < val_1e18) {
+        sprintf(buff, "%" PRIu64, (uint64_t)v);
+        return buff;
+    }
+
+    if(v < val_1e36) {
+        const __uint128_t hi = v / val_1e18;
+        const __uint128_t lo = v - hi * val_1e18;
+        sprintf(buff, "%" PRIu64 "%018" PRIu64, (uint64_t)hi, (uint64_t)lo);
+    }
+    else {
+        const __uint128_t hi = v / val_1e36;
+        const __uint128_t tmp = v - hi * val_1e36;
+        const __uint128_t mi = tmp / val_1e18;
+        const __uint128_t lo = tmp % val_1e18;
+        sprintf(buff, "%" PRIu64 "%018" PRIu64 "%018" PRIu64, (uint64_t)hi, (uint64_t)mi, (uint64_t)lo);
+    }
+
+    return buff;
+}
 
 // Copies everything from src (starting from srcIdx) to dst (starting from dstIdx), until it meets a separator.
 // Separators are defined by SEPS.
@@ -82,11 +148,16 @@ inline bool Arg2StrIfSuitable(char type, ArgWriter &argWriter, StaticStringRef<A
 // uniform2Str<T> or varying2Str<T>.
 template <typename ArgWriter> inline StaticString<ARG_STR_SIZE> Arg2Str(char type, ArgWriter &argWriter) {
     StaticString<ARG_STR_SIZE> res;
-    Arg2StrIfSuitable<bool>(type, argWriter, res) || Arg2StrIfSuitable<int>(type, argWriter, res) ||
-        Arg2StrIfSuitable<unsigned>(type, argWriter, res) || Arg2StrIfSuitable<float>(type, argWriter, res) ||
+    Arg2StrIfSuitable<bool>(type, argWriter, res) ||
+        Arg2StrIfSuitable<int>(type, argWriter, res) ||
+        Arg2StrIfSuitable<unsigned>(type, argWriter, res) ||
+        Arg2StrIfSuitable<float>(type, argWriter, res) ||
         Arg2StrIfSuitable<long long>(type, argWriter, res) ||
         Arg2StrIfSuitable<unsigned long long>(type, argWriter, res) ||
-        Arg2StrIfSuitable<double>(type, argWriter, res) || Arg2StrIfSuitable<void *>(type, argWriter, res);
+        Arg2StrIfSuitable<double>(type, argWriter, res) ||
+        Arg2StrIfSuitable<__int128_t>(type, argWriter, res) ||
+        Arg2StrIfSuitable<__uint128_t>(type, argWriter, res) ||
+        Arg2StrIfSuitable<void *>(type, argWriter, res);
     return res;
 }
 } // namespace details

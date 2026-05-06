@@ -17,6 +17,7 @@ namespace PrintInfo {
 /* '\0' is excluded as encodings must form a c-string.
    L0 depends on Encoding being contiguous numbers.
  */
+// TODO [zephyr111]: experimental changes!
 enum Encoding : char {
     Bool = 1,
     Int,
@@ -25,6 +26,8 @@ enum Encoding : char {
     Long,
     ULong,
     Double,
+    Int128, // TODO [zephyr111]: the order seems critical so not generate wrong code... It looks like there is another structure somewhere to update no referenced here (without any assert on the matter) -- See stmt.cpp => ugly part of the code partially explainign this...
+    UInt128,
     Ptr,
     VecBool,
     VecInt,
@@ -33,6 +36,8 @@ enum Encoding : char {
     VecLong,
     VecULong,
     VecDouble,
+    VecInt128,
+    VecUInt128,
     VecPtr,
     Size = VecPtr - Bool + 1
 };
@@ -48,6 +53,9 @@ template <typename T> Encoding getEncoding4Uniform();
 // get encoding (as a char) for uniform T type, that is used in type argument of __do_print
 template <typename T> Encoding getEncoding4Varying();
 
+// TODO [zephyr111]: what kind of type to define in C for 128-bit integers?
+// TODO [zephyr111]: shouldn't we switch to fixed-size types like int32_t, uint64_t, etc. though it might break the ABI?
+
 template <> inline constexpr Encoding getEncoding4Uniform<bool>() { return Encoding::Bool; }
 template <> inline constexpr Encoding getEncoding4Uniform<int>() { return Encoding::Int; }
 template <> inline constexpr Encoding getEncoding4Uniform<unsigned>() { return Encoding::UInt; }
@@ -55,6 +63,8 @@ template <> inline constexpr Encoding getEncoding4Uniform<float>() { return Enco
 template <> inline constexpr Encoding getEncoding4Uniform<long long>() { return Encoding::Long; }
 template <> inline constexpr Encoding getEncoding4Uniform<unsigned long long>() { return Encoding::ULong; }
 template <> inline constexpr Encoding getEncoding4Uniform<double>() { return Encoding::Double; }
+template <> inline constexpr Encoding getEncoding4Uniform<__int128_t>() { return Encoding::Int128; }
+template <> inline constexpr Encoding getEncoding4Uniform<__uint128_t>() { return Encoding::UInt128; }
 template <> inline constexpr Encoding getEncoding4Uniform<void *>() { return Encoding::Ptr; }
 
 template <> inline constexpr Encoding getEncoding4Varying<bool>() { return Encoding::VecBool; }
@@ -64,6 +74,8 @@ template <> inline constexpr Encoding getEncoding4Varying<float>() { return Enco
 template <> inline constexpr Encoding getEncoding4Varying<long long>() { return Encoding::VecLong; }
 template <> inline constexpr Encoding getEncoding4Varying<unsigned long long>() { return Encoding::VecULong; }
 template <> inline constexpr Encoding getEncoding4Varying<double>() { return Encoding::VecDouble; }
+template <> inline constexpr Encoding getEncoding4Varying<__int128_t>() { return Encoding::VecInt128; }
+template <> inline constexpr Encoding getEncoding4Varying<__uint128_t>() { return Encoding::VecUInt128; }
 template <> inline constexpr Encoding getEncoding4Varying<void *>() { return Encoding::VecPtr; }
 
 /* Takes encoding for varying type, returns encoding for corresponding uniform type.
@@ -100,6 +112,11 @@ template <> inline const char *type2Specifier<float>() { return "%f"; }
 template <> inline const char *type2Specifier<long long>() { return "%lld"; }
 template <> inline const char *type2Specifier<long long unsigned>() { return "%llu"; }
 template <> inline const char *type2Specifier<double>() { return "%f"; }
+
+// %s is because we will eventually print numbers that are not supported by underlying C calls
+template <> inline const char *type2Specifier<__int128_t>() { return "%s"; }
+template <> inline const char *type2Specifier<__uint128_t>() { return "%s"; }
+
 template <> inline const char *type2Specifier<void *>() { return "%p"; }
 
 // same as type2Specifier, but now it is a functor
@@ -119,11 +136,16 @@ inline bool applyIfProperEncoding(Encoding type, Func f, Encoder encoder) {
 }
 
 template <typename Func, typename Encoder> inline bool switchEncoding(Encoding type, Func f, Encoder encoder) {
-    return applyIfProperEncoding<bool>(type, f, encoder) || applyIfProperEncoding<int>(type, f, encoder) ||
-           applyIfProperEncoding<unsigned>(type, f, encoder) || applyIfProperEncoding<float>(type, f, encoder) ||
+    return applyIfProperEncoding<bool>(type, f, encoder) ||
+           applyIfProperEncoding<int>(type, f, encoder) ||
+           applyIfProperEncoding<unsigned>(type, f, encoder) ||
+           applyIfProperEncoding<float>(type, f, encoder) ||
            applyIfProperEncoding<long long>(type, f, encoder) ||
            applyIfProperEncoding<unsigned long long>(type, f, encoder) ||
-           applyIfProperEncoding<double>(type, f, encoder) || applyIfProperEncoding<void *>(type, f, encoder);
+           applyIfProperEncoding<double>(type, f, encoder) ||
+           applyIfProperEncoding<__int128_t>(type, f, encoder) ||
+           applyIfProperEncoding<__uint128_t>(type, f, encoder) ||
+           applyIfProperEncoding<void *>(type, f, encoder);
 }
 
 } // namespace detail

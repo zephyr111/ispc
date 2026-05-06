@@ -640,32 +640,35 @@ bool ispc::IsStdin(const char *filepath) {
     }
 }
 
+static inline __int128_t Int128Abs(__int128_t v) {
+    return v < 0 ? -v : v;
+}
+
 // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
 std::string ispc::ToString(__int128_t v) {
-    const int64_t val_1e9 = 1000000000ll;
-
-    if(v > -val_1e9 && v < val_1e9)
-        return std::to_string((int64_t)v);
-
-    const __int128_t val_1e18 = (__int128_t)val_1e9 * val_1e9;
+    const int64_t val_1e18 = 1000000000000000000ll;
+    const __int128_t val_1e36 = (__int128_t)val_1e18 * val_1e18;
     std::ostringstream oss;
 
-    if(-val_1e18 < v && v < val_1e18) {
-        __int128_t tmp = v / val_1e9;
-        oss << (int64_t)tmp;
-        tmp = v - tmp * val_1e9;
-        tmp = tmp < 0 ? -tmp : tmp;
+    if(v > -val_1e18 && v < val_1e18)
+        return std::to_string((int64_t)v);
+
+    if(-val_1e36 < v && v < val_1e36) {
+        const __int128_t hi = v / val_1e18;
+        const __int128_t lo = Int128Abs(v - hi * val_1e18);
+        oss << (int64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (int64_t)tmp;
+        oss << std::setw(9) << (int64_t)lo;
     }
     else {
-        __int128_t tmp = v / val_1e18;
-        oss << (int64_t)tmp;
-        tmp = v - tmp * val_1e18;
-        tmp = tmp < 0 ? -tmp : tmp;
+        const __int128_t hi = v / val_1e36;
+        const __int128_t tmp = Int128Abs(v - hi * val_1e36);
+        const __int128_t mi = tmp / val_1e18;
+        const __int128_t lo = tmp % val_1e18;
+        oss << (int64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (int64_t)(tmp / val_1e9);
-        oss << std::setw(9) << (int64_t)(tmp % val_1e9);
+        oss << std::setw(9) << (int64_t)mi;
+        oss << std::setw(9) << (int64_t)lo;
     }
 
     return oss.str();
@@ -673,28 +676,29 @@ std::string ispc::ToString(__int128_t v) {
 
 // TODO [zephyr111]: FIXME: test this code carefully!
 std::string ispc::ToString(__uint128_t v) {
-    const uint64_t val_1e9 = 1000000000ull;
-
-    if(v < val_1e9)
-        return std::to_string((uint64_t)v);
-
-    const __uint128_t val_1e18 = (__uint128_t)val_1e9 * val_1e9;
+    const uint64_t val_1e18 = 1000000000000000000ull;
+    const __uint128_t val_1e36 = (__uint128_t)val_1e18 * val_1e18;
     std::ostringstream oss;
 
-    if(v < val_1e18) {
-        __uint128_t tmp = v / val_1e9;
-        oss << (uint64_t)tmp;
-        tmp = v - tmp * val_1e9;
+    if(v < val_1e18)
+        return std::to_string((uint64_t)v);
+
+    if(v < val_1e36) {
+        const __uint128_t hi = v / val_1e18;
+        const __uint128_t lo = v - hi * val_1e18;
+        oss << (uint64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (uint64_t)tmp;
+        oss << std::setw(9) << (uint64_t)lo;
     }
     else {
-        __uint128_t tmp = v / val_1e18;
-        oss << (uint64_t)tmp;
-        tmp = v - tmp * val_1e18;
+        const __uint128_t hi = v / val_1e36;
+        const __uint128_t tmp = v - hi * val_1e36;
+        const __uint128_t mi = tmp / val_1e18;
+        const __uint128_t lo = tmp % val_1e18;
+        oss << (uint64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (uint64_t)(tmp / val_1e9);
-        oss << std::setw(9) << (uint64_t)(tmp % val_1e9);
+        oss << std::setw(9) << (uint64_t)mi;
+        oss << std::setw(9) << (uint64_t)lo;
     }
 
     return oss.str();

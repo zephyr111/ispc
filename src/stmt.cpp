@@ -3569,23 +3569,23 @@ static char lEncodeType(const Type *t) {
     }
     if (Type::Equal(t, AtomicType::UniformInt128)) {
         // TODO [zephyr111]: not supported yet
-        Assert(false);
-        //return PrintInfo::getEncoding4Uniform<__int128_t>();
+        //Assert(false);
+        return PrintInfo::getEncoding4Uniform<__int128_t>();
     }
     if (Type::Equal(t, AtomicType::VaryingInt128)) {
         // TODO [zephyr111]: not supported yet
-        Assert(false);
-        //return PrintInfo::getEncoding4Varying<__int128_t>();
+        //Assert(false);
+        return PrintInfo::getEncoding4Varying<__int128_t>();
     }
     if (Type::Equal(t, AtomicType::UniformUInt128)) {
         // TODO [zephyr111]: not supported yet
-        Assert(false);
-        //return PrintInfo::getEncoding4Uniform<__uint128_t>();
+        //Assert(false);
+        return PrintInfo::getEncoding4Uniform<__uint128_t>();
     }
     if (Type::Equal(t, AtomicType::VaryingUInt128)) {
         // TODO [zephyr111]: not supported yet
-        Assert(false);
-        //return PrintInfo::getEncoding4Varying<__uint128_t>();
+        //Assert(false);
+        return PrintInfo::getEncoding4Varying<__uint128_t>();
     }
     if (Type::Equal(t, AtomicType::UniformDouble)) {
         return PrintInfo::getEncoding4Uniform<double>();

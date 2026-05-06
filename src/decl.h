@@ -73,7 +73,7 @@ class AttrArgument {
     void Print() const;
 
     AttrArgKind kind;
-    int64_t intVal;
+    int64_t intVal; // TODO [zephyr111]: should this be modified?
     std::string stringVal;
 };
 

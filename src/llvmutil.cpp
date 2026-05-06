@@ -233,12 +233,20 @@ llvm::ConstantInt *LLVMUInt64(uint64_t ival) {
     return llvm::ConstantInt::get(llvm::Type::getInt64Ty(*g->ctx), ival, false /*unsigned*/);
 }
 
-llvm::ConstantInt *LLVMInt128(__int128_t ival) {
-    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), ival, true /*signed*/);
+// TODO [zephyr111]: it looks like 128-bit integers cannot be stored in llvm::ConstantInt but llvm::Constant
+// TODO [zephyr111]: it also looks like the endianess is `{lowBits, highBits}`. Check this is true on all platforms
+llvm::Constant *LLVMInt128(__int128_t ival) {
+    // TODO [zephyr111]: is the value properly signed like others and does this actually matters? see the other TODO in this file.
+    const uint64_t i128_parts[2] = {(uint64_t)(__uint128_t)ival, (uint64_t)((__uint128_t)ival >> 64)};
+    const llvm::APInt i128_full(128, llvm::ArrayRef(i128_parts, 2));
+    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), i128_full);
 }
 
-llvm::ConstantInt *LLVMUInt128(__uint128_t ival) {
-    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), ival, false /*unsigned*/);
+llvm::Constant *LLVMUInt128(__uint128_t ival) {
+    // TODO [zephyr111]: is the value properly signed like others and does this actually matters? see the other TODO in this file.
+    const uint64_t i128_parts[2] = {(uint64_t)(__uint128_t)ival, (uint64_t)((__uint128_t)ival >> 64)};
+    const llvm::APInt i128_full(128, llvm::ArrayRef(i128_parts, 2));
+    return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), i128_full);
 }
 
 llvm::Constant *LLVMFloat16(llvm::APFloat fv) { return llvm::ConstantFP::get(llvm::Type::getHalfTy(*g->ctx), fv); }
