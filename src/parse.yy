@@ -348,7 +348,7 @@ struct ForeachDimension {
 // TODO [zephyr111]: FIXME: implement 128-bit integer formatting (similar to the C++ stringstream code in expr.cpp)
 %printer { fprintf(yyo, "%s", SAFE_ACCESS($$, c_str())); } <stringVal>
 %printer { fprintf(yyo, "%s", $$); } <constCharPtr>
-%printer { fprintf(yyo, "%" PRIu64, $$); } <intVal>
+%printer { fprintf(yyo, "%s", ispc::ToString($$).c_str()); } <intVal>
 %printer { fprintf(yyo, "%s", SAFE_ACCESS($$, GetString().c_str())); } <expr>
 %printer { fprintf(yyo, "%s", SAFE_ACCESS($$, GetString().c_str())); } <exprList>
 %printer { fprintf(yyo, "%s", SAFE_ACCESS($$, GetString().c_str())); } <stmt>

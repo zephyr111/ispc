@@ -38,6 +38,8 @@
 #include <algorithm>
 #include <set>
 #include <sstream>
+#include <iomanip>
+#include <climits>
 
 #include <llvm/IR/DataLayout.h>
 #include <llvm/Support/FileSystem.h>
@@ -636,4 +638,228 @@ bool ispc::IsStdin(const char *filepath) {
     } else {
         return false;
     }
+}
+
+// TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
+std::string ispc::ToString(__int128_t v) {
+    const int64_t val_1e9 = 1000000000ll;
+
+    if(v > -val_1e9 && v < val_1e9)
+        return std::to_string((int64_t)v);
+
+    const __int128_t val_1e18 = (__int128_t)val_1e9 * val_1e9;
+    std::ostringstream oss;
+
+    if(-val_1e18 < v && v < val_1e18) {
+        __int128_t tmp = v / val_1e9;
+        oss << (int64_t)tmp;
+        tmp = v - tmp * val_1e9;
+        tmp = tmp < 0 ? -tmp : tmp;
+        oss.fill('0');
+        oss << std::setw(9) << (int64_t)tmp;
+    }
+    else {
+        __int128_t tmp = v / val_1e18;
+        oss << (int64_t)tmp;
+        tmp = v - tmp * val_1e18;
+        tmp = tmp < 0 ? -tmp : tmp;
+        oss.fill('0');
+        oss << std::setw(9) << (int64_t)(tmp / val_1e9);
+        oss << std::setw(9) << (int64_t)(tmp % val_1e9);
+    }
+
+    return oss.str();
+}
+
+// TODO [zephyr111]: FIXME: test this code carefully!
+std::string ispc::ToString(__uint128_t v) {
+    const uint64_t val_1e9 = 1000000000ull;
+
+    if(v < val_1e9)
+        return std::to_string((uint64_t)v);
+
+    const __uint128_t val_1e18 = (__uint128_t)val_1e9 * val_1e9;
+    std::ostringstream oss;
+
+    if(v < val_1e18) {
+        __uint128_t tmp = v / val_1e9;
+        oss << (uint64_t)tmp;
+        tmp = v - tmp * val_1e9;
+        oss.fill('0');
+        oss << std::setw(9) << (uint64_t)tmp;
+    }
+    else {
+        __uint128_t tmp = v / val_1e18;
+        oss << (uint64_t)tmp;
+        tmp = v - tmp * val_1e18;
+        oss.fill('0');
+        oss << std::setw(9) << (uint64_t)(tmp / val_1e9);
+        oss << std::setw(9) << (uint64_t)(tmp % val_1e9);
+    }
+
+    return oss.str();
+}
+
+// TODO [zephyr111]: FIXME: test this code carefully!
+__uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
+    bool isBase2 = base == 2;
+    bool isBase8 = base == 8;
+    bool isBase10 = base == 10;
+    bool isBase16 = base == 16;
+    const char* ptr = start;
+
+    while (std::isspace(*ptr))
+        ptr++;
+
+    if (*ptr == 0) [[unlikely]] {
+        if(end != nullptr)
+            *end = ptr;
+        errno = EINVAL;
+        return std::numeric_limits<__uint128_t>::max();
+    }
+
+    // Auto-detection of `base` based on the prefix
+    if(base == 0) {
+        if (*ptr == '0') {
+            ptr++;
+
+            if (*ptr == 0) {
+                if(end != nullptr)
+                    *end = ptr;
+                return 0;
+            } else if (*ptr == 'b') {
+                ptr++;
+                isBase2 = true;
+            } else if (*ptr == 'x' || *ptr == 'X') {
+                ptr++;
+                isBase16 = true;
+            } else {
+                isBase8 = true;
+            }
+        } else {
+            isBase10 = true;
+        }
+    }
+
+    if (*ptr == 0) [[unlikely]] {
+        if(end != nullptr)
+            *end = ptr;
+        errno = EINVAL;
+        return std::numeric_limits<__uint128_t>::max();
+    }
+
+    __uint128_t val = 0;
+
+    if (isBase2) {
+        const __uint128_t highBits = ((__uint128_t)1) << 127;
+
+        while (*ptr == '0' || *ptr == '1') {
+            if ((val & highBits) != 0) [[unlikely]] {
+                if(end != nullptr)
+                    *end = ptr;
+                errno = ERANGE;
+                return std::numeric_limits<__uint128_t>::max();
+            }
+
+            val = (val << 1) | (*ptr - '0');
+            ++ptr;
+        }
+    } else if (isBase8) {
+        const __uint128_t highBits = ((__uint128_t)1) << 125;
+
+        while (*ptr >= '0' && *ptr <= '7') {
+            if ((val & highBits) != 0) [[unlikely]] {
+                if(end != nullptr)
+                    *end = ptr;
+                errno = ERANGE;
+                return std::numeric_limits<__uint128_t>::max();
+            }
+
+            val = (val << 3) | (*ptr - '0');
+            ++ptr;
+        }
+    } else if (isBase10) {
+        const __uint128_t limit = (((__uint128_t)0x1999999999999999) << 64) | 0x9999999999999999;
+
+        while (*ptr >= '0' && *ptr <= '9') {
+            if (val >= limit) {
+                if (val > limit || *ptr >= '6') {
+                    if(end != nullptr)
+                        *end = ptr;
+                    errno = ERANGE;
+                    return std::numeric_limits<__uint128_t>::max();
+                }
+            }
+
+            val = val * 10 + (*ptr - '0');
+            ++ptr;
+        }
+    } else if (isBase16) {
+        const __uint128_t highBits = ((__uint128_t)1) << 124;
+        const uint8_t no = 0xFF;
+        static const uint8_t LUT[256] = {
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+             0,  1,  2,  3,  4,  5,  6,  7,  8,  9, no, no, no, no, no, no,
+            no, 10, 11, 12, 13, 14, 15, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, 10, 11, 12, 13, 14, 15, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
+            no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no
+        };
+
+        while ((CHAR_BIT == 8 || *ptr < 256) && LUT[(uint8_t)*ptr] != no) {
+            if ((val & highBits) != 0) [[unlikely]] {
+                if(end != nullptr)
+                    *end = ptr;
+                errno = ERANGE;
+                return std::numeric_limits<__uint128_t>::max();
+            }
+
+            val = (val << 4) | LUT[(uint8_t)*ptr];
+            ++ptr;
+        }
+    } else [[unlikely]] {
+        // Unsupported base
+        if(end != nullptr)
+            *end = ptr;
+        errno = EINVAL;
+        return std::numeric_limits<__uint128_t>::max();
+    }
+
+    // TODO [zephyr111]: be sure trailing invalid numbers are just ignored
+
+    if(end != nullptr)
+        *end = ptr;
+    return val;
+}
+
+std::ostream& operator<<(std::ostream& stream, __int128_t v) {
+    const int64_t val_1e9 = 1000000000ll;
+
+    if(v < val_1e9)
+        stream << (int64_t)v;
+    else
+        stream << ispc::ToString(v);
+
+    return stream;
+}
+
+std::ostream& operator<<(std::ostream& stream, __uint128_t v) {
+    const uint64_t val_1e9 = 1000000000ull;
+
+    if(v < val_1e9)
+        stream << (uint64_t)v;
+    else
+        stream << ispc::ToString(v);
+
+    return stream;
 }

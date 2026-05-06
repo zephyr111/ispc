@@ -13,11 +13,11 @@
 #include "type.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <util.h>
 
 using namespace ispc;
 #include "parse.hh"
 
-static __uint128_t lParseBinary(const char *ptr, SourcePos pos, char **endPtr);
 static int lParseInteger(bool dotdotdot);
 static int lParseFP();
 static int lParseOperator(const char *ptr);
@@ -589,46 +589,12 @@ L?\"(\\.|[^\\"])*\" { lStringConst(&yylval, &yylloc); return TOKEN_STRING_LITERA
 /*union { return TOKEN_UNION; }*/
 /*"..." { return TOKEN_ELLIPSIS; }*/
 
-/** Return the integer version of a binary constant from a string.
- */
-static __uint128_t
-lParseBinary(const char *ptr, SourcePos pos, char **endPtr) {
-    __uint128_t val = 0;
-    bool warned = false;
-
-    // TODO [zephyr111]: optimize this by parsing 64-bit numbers and fallback on 128-bit integers only if they are too big
-    while (*ptr == '0' || *ptr == '1') {
-        if ((val & (((__int128_t)1)<<127)) && warned == false) {
-            // We're about to shift out a set bit
-            Warning(pos, "Can't represent binary constant with a 128-bit integer type");
-            warned = true;
-        }
-
-        val = (val << 1) | (*ptr == '0' ? 0 : 1);
-        ++ptr;
-    }
-    *endPtr = (char *)ptr;
-    return val;
-}
-
-
 static int
 lParseInteger(bool dotdotdot) {
     int ls = 0, us = 0;
 
-    char *endPtr = nullptr;
-    if (yytext[0] == '0' && yytext[1] == 'b')
-        yylval.intVal = lParseBinary(yytext+2, yylloc, &endPtr);
-    else {
-        // TODO [zephyr111]: FIXME: support reading 128-bit integers
-#if defined(ISPC_HOST_IS_WINDOWS) && !defined(__MINGW32__)
-        yylval.intVal = _strtoui64(yytext, &endPtr, 0);
-#else
-        // FIXME: should use strtouq and then issue an error if we can't
-        // fit into 64 bits...
-        yylval.intVal = strtoull(yytext, &endPtr, 0);
-#endif
-    }
+    const char* endPtr = nullptr;
+    yylval.intVal = ispc::StrToUint128(yytext, &endPtr, 0);
 
     bool kilo = false, mega = false, giga = false;
     for (; *endPtr; endPtr++) {
@@ -645,6 +611,14 @@ lParseInteger(bool dotdotdot) {
         else
             Assert(dotdotdot && *endPtr == '.');
     }
+
+    if (*endPtr != 0) {
+        if (errno == ERANGE)
+            Warning(yylloc, "Can't represent the integer constant with a 128-bit integer type");
+        else
+            Warning(yylloc, "Invalid integer constant formatting");
+    }
+
     if (kilo)
         yylval.intVal *= 1024;
     if (mega)
@@ -653,6 +627,7 @@ lParseInteger(bool dotdotdot) {
         yylval.intVal *= 1024*1024*1024;
 
     // TODO [zephyr111]: should we support a "lll" suffix?
+    //                   maybe another like i128, similar to what Rust does?
     if (dotdotdot) {
         if (ls >= 2)
             return us ? TOKEN_UINT64DOTDOTDOT_CONSTANT : TOKEN_INT64DOTDOTDOT_CONSTANT;
@@ -803,7 +778,7 @@ static void lPragmaUnroll(YYSTYPE *yylval, SourcePos *pos, std::string fromUserR
         ++pos->last_column;
     }
 
-    // TODO [zephyr111]: FIXME: same thing here: support reading 128-bit integers
+    // TODO [zephyr111]: FIXME: same thing here: support reading 128-bit integers?
     char *endPtr = nullptr;
 #if defined(ISPC_HOST_IS_WINDOWS) && !defined(__MINGW32__)
     count = _strtoui64(currChar, &endPtr, 0);

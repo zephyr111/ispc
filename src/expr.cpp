@@ -33,7 +33,6 @@
 #include <list>
 #include <set>
 #include <sstream>
-#include <iomanip>
 #include <stdio.h>
 #include <utility>
 
@@ -7020,64 +7019,10 @@ std::string ConstExpr::GetValuesAsStr(const std::string &separator) const {
             result << uint64Val[i];
             break;
         case AtomicType::TYPE_INT128:
-            {
-                // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
-                const int64_t val_1e9 = 1000000000ll;
-                const __int128_t val_1e18 = (__int128_t)val_1e9 * val_1e9;
-                if(int128Val[i] > -val_1e9 && int128Val[i] < val_1e9){
-                    result << (int64_t)int128Val[i];
-                }
-                else if(-val_1e18 < int128Val[i] && int128Val[i] < val_1e18) {
-                    std::ostringstream oss;
-                    __int128_t tmp = int128Val[i] / val_1e9;
-                    oss << (int64_t)tmp;
-                    tmp = int128Val[i] - tmp * val_1e9;
-                    tmp = tmp < 0 ? -tmp : tmp;
-                    oss.fill('0');
-                    oss << std::setw(9) << (int64_t)tmp;
-                    result << oss.str();
-                }
-                else {
-                    std::ostringstream oss;
-                    __int128_t tmp = int128Val[i] / val_1e18;
-                    oss << (int64_t)tmp;
-                    tmp = int128Val[i] - tmp * val_1e18;
-                    tmp = tmp < 0 ? -tmp : tmp;
-                    oss.fill('0');
-                    oss << std::setw(9) << (int64_t)(tmp / val_1e9);
-                    oss << std::setw(9) << (int64_t)(tmp % val_1e9);
-                    result << oss.str();
-                }
-            }
+            result << int128Val[i];
             break;
         case AtomicType::TYPE_UINT128:
-            {
-                // TODO [zephyr111]: FIXME: test this code carefully!
-                const uint64_t val_1e9 = 1000000000ull;
-                const __uint128_t val_1e18 = (__uint128_t)val_1e9 * val_1e9;
-                if(uint128Val[i] < val_1e9){
-                    result << (uint64_t)uint128Val[i];
-                }
-                else if(uint128Val[i] < val_1e18) {
-                    std::ostringstream oss;
-                    __uint128_t tmp = uint128Val[i] / val_1e9;
-                    oss << (uint64_t)tmp;
-                    tmp = uint128Val[i] - tmp * val_1e9;
-                    oss.fill('0');
-                    oss << std::setw(9) << (uint64_t)tmp;
-                    result << oss.str();
-                }
-                else {
-                    std::ostringstream oss;
-                    __uint128_t tmp = uint128Val[i] / val_1e18;
-                    oss << (uint64_t)tmp;
-                    tmp = uint128Val[i] - tmp * val_1e18;
-                    oss.fill('0');
-                    oss << std::setw(9) << (uint64_t)(tmp / val_1e9);
-                    oss << std::setw(9) << (uint64_t)(tmp % val_1e9);
-                    result << oss.str();
-                }
-            }
+            result << uint128Val[i];
             break;
         case AtomicType::TYPE_FLOAT16:
         case AtomicType::TYPE_FLOAT:
