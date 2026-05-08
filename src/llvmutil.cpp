@@ -105,6 +105,7 @@ void InitLLVMUtil(llvm::LLVMContext *ctx, Target &target) {
     case 64:
         LLVMTypes::MaskType = LLVMTypes::BoolVectorType =
             LLVMVECTOR::get(llvm::Type::getInt64Ty(*ctx), target.getVectorWidth());
+        break;
     case 128:
         LLVMTypes::MaskType = LLVMTypes::BoolVectorType =
             LLVMVECTOR::get(llvm::Type::getInt128Ty(*ctx), target.getVectorWidth());
