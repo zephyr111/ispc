@@ -1563,6 +1563,13 @@ EXT void __masked_store_i64(NOESCAPE varying int64 *uniform ptr, varying int64 v
     @llvm.masked.store(val, (uniform int8 * uniform) ptr, 1l, mask);
 #endif
 }
+EXT void __masked_store_i128(NOESCAPE varying int128 *uniform ptr, varying int128 val, UIntMaskType mask) {
+#if LLVM_VERSION_MAJOR >= 22
+    @llvm.masked.store(val, (uniform int8 * uniform) ptr, mask);
+#else
+    @llvm.masked.store(val, (uniform int8 * uniform) ptr, 1l, mask);
+#endif
+}
 EXT void __masked_store_half(NOESCAPE varying float16 *uniform ptr, varying float16 val, UIntMaskType mask) {
 #if LLVM_VERSION_MAJOR >= 22
     @llvm.masked.store(val, (uniform int8 * uniform) ptr, mask);
@@ -1595,6 +1602,9 @@ EXT void __masked_store_blend_i32(NOESCAPE varying int32 *uniform ptr, varying i
     @llvm.ispc.blend_store(val, (uniform int8 * uniform) ptr, mask);
 }
 EXT void __masked_store_blend_i64(NOESCAPE varying int64 *uniform ptr, varying int64 val, UIntMaskType mask) {
+    @llvm.ispc.blend_store(val, (uniform int8 * uniform) ptr, mask);
+}
+EXT void __masked_store_blend_i128(NOESCAPE varying int128 *uniform ptr, varying int128 val, UIntMaskType mask) {
     @llvm.ispc.blend_store(val, (uniform int8 * uniform) ptr, mask);
 }
 EXT void __masked_store_blend_half(NOESCAPE varying float16 *uniform ptr, varying float16 val, UIntMaskType mask) {

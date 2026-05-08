@@ -405,6 +405,7 @@ struct RNGState {
 //  void __pseudo_masked_store_half(uniform float16 *ptr, varying float16 values, mask)
 //  void __pseudo_masked_store_float(uniform float *ptr, varying float values, mask)
 //  void __pseudo_masked_store_i64(uniform int64 *ptr, varying int64 values, mask)
+//  void __pseudo_masked_store_i128(uniform int128 *ptr, varying int128 values, mask)
 //  void __pseudo_masked_store_double(uniform double *ptr, varying double values, mask)
 //
 //  These in turn are converted to native masked stores or to regular
@@ -423,6 +424,8 @@ ISPC_BUILTINS_ATTRS noinline void __pseudo_masked_store_float(ISPC_NOESCAPE vary
                                                               UIntMaskType);
 ISPC_BUILTINS_ATTRS noinline void __pseudo_masked_store_i64(ISPC_NOESCAPE varying int64 *uniform, varying int64,
                                                             UIntMaskType);
+ISPC_BUILTINS_ATTRS noinline void __pseudo_masked_store_i128(ISPC_NOESCAPE varying int128 *uniform, varying int128,
+                                                             UIntMaskType);
 ISPC_BUILTINS_ATTRS noinline void __pseudo_masked_store_double(ISPC_NOESCAPE varying double *uniform, varying double,
                                                                UIntMaskType);
 
@@ -692,6 +695,7 @@ ISPC_BUILTINS_ATTRS inline void __masked_store_i8(ISPC_NOESCAPE varying int8 *un
 ISPC_BUILTINS_ATTRS inline void __masked_store_i16(ISPC_NOESCAPE varying int16 *uniform, varying int16, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_i32(ISPC_NOESCAPE varying int32 *uniform, varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_i64(ISPC_NOESCAPE varying int64 *uniform, varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __masked_store_i128(ISPC_NOESCAPE varying int64 *uniform, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_float(ISPC_NOESCAPE varying float *uniform, varying float, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_double(ISPC_NOESCAPE varying double *uniform, varying double,
                                                       UIntMaskType);
@@ -711,6 +715,8 @@ ISPC_BUILTINS_ATTRS inline void __masked_store_blend_i32(ISPC_NOESCAPE varying i
                                                          UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_blend_i64(ISPC_NOESCAPE varying int64 *uniform, varying int64,
                                                          UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __masked_store_blend_i128(ISPC_NOESCAPE varying int128 *uniform, varying int128,
+                                                          UIntMaskType);
 
 ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int8 __gather_factored_base_offsets32_i8(uniform int8 *uniform,
                                                                                           varying int32, uniform int32,
