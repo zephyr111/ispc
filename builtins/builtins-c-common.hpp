@@ -30,7 +30,6 @@ template <typename T> inline T ValueAdapterImpl(T val) { return val; }
 
 static inline const char *ValueAdapterImpl(bool val) { return val ? "true" : "false"; }
 
-// TODO [zephyr111]: to be implemented more efficiently...
 // TODO [zephyr111]: FIXME: test this code carefully!
 
 static inline __int128_t Int128Abs(__int128_t v) {

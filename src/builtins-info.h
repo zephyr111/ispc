@@ -17,7 +17,6 @@ namespace PrintInfo {
 /* '\0' is excluded as encodings must form a c-string.
    L0 depends on Encoding being contiguous numbers.
  */
-// TODO [zephyr111]: experimental changes!
 enum Encoding : char {
     Bool = 1,
     Int,
@@ -26,7 +25,7 @@ enum Encoding : char {
     Long,
     ULong,
     Double,
-    Int128, // TODO [zephyr111]: the order seems critical so not generate wrong code... It looks like there is another structure somewhere to update no referenced here (without any assert on the matter) -- See stmt.cpp => ugly part of the code partially explainign this...
+    Int128,
     UInt128,
     Ptr,
     VecBool,
