@@ -33,6 +33,7 @@ template <typename T> inline T ValueAdapterImpl(T val) { return val; }
 static inline const char *ValueAdapterImpl(bool val) { return val ? "true" : "false"; }
 
 // TODO [zephyr111]: FIXME: test this code carefully!
+// TODO [zephyr111]: replace this with a basic print and %w128d and %w128u formats if _BitInt is guaranteed to be the standard and the target standard C library support it (full C23 support for _Bitint).
 
 static inline int128_t Int128Abs(int128_t v) {
     return v < 0 ? -v : v;
