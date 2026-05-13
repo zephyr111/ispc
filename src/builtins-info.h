@@ -12,6 +12,18 @@
 #ifndef ISPC_BUILTINS_INFO_H
 #define ISPC_BUILTINS_INFO_H 1
 
+#include <stdint.h>
+
+#ifndef UINT128_MAX
+#if defined(__clang_major__) && __clang_major__ >= 18 || defined(__GNUC__) && __GNUC__ >= 14
+using int128_t = _BitInt(128);
+using uint128_t = unsigned _BitInt(128);
+#elif defined(__SIZEOF_INT128__)
+using int128_t = __int128;
+using uint128_t = unsigned __int128;
+#endif
+#endif
+
 namespace PrintInfo {
 
 /* '\0' is excluded as encodings must form a c-string.
@@ -62,8 +74,8 @@ template <> inline constexpr Encoding getEncoding4Uniform<float>() { return Enco
 template <> inline constexpr Encoding getEncoding4Uniform<long long>() { return Encoding::Long; }
 template <> inline constexpr Encoding getEncoding4Uniform<unsigned long long>() { return Encoding::ULong; }
 template <> inline constexpr Encoding getEncoding4Uniform<double>() { return Encoding::Double; }
-template <> inline constexpr Encoding getEncoding4Uniform<__int128_t>() { return Encoding::Int128; }
-template <> inline constexpr Encoding getEncoding4Uniform<__uint128_t>() { return Encoding::UInt128; }
+template <> inline constexpr Encoding getEncoding4Uniform<int128_t>() { return Encoding::Int128; }
+template <> inline constexpr Encoding getEncoding4Uniform<uint128_t>() { return Encoding::UInt128; }
 template <> inline constexpr Encoding getEncoding4Uniform<void *>() { return Encoding::Ptr; }
 
 template <> inline constexpr Encoding getEncoding4Varying<bool>() { return Encoding::VecBool; }
@@ -73,8 +85,8 @@ template <> inline constexpr Encoding getEncoding4Varying<float>() { return Enco
 template <> inline constexpr Encoding getEncoding4Varying<long long>() { return Encoding::VecLong; }
 template <> inline constexpr Encoding getEncoding4Varying<unsigned long long>() { return Encoding::VecULong; }
 template <> inline constexpr Encoding getEncoding4Varying<double>() { return Encoding::VecDouble; }
-template <> inline constexpr Encoding getEncoding4Varying<__int128_t>() { return Encoding::VecInt128; }
-template <> inline constexpr Encoding getEncoding4Varying<__uint128_t>() { return Encoding::VecUInt128; }
+template <> inline constexpr Encoding getEncoding4Varying<int128_t>() { return Encoding::VecInt128; }
+template <> inline constexpr Encoding getEncoding4Varying<uint128_t>() { return Encoding::VecUInt128; }
 template <> inline constexpr Encoding getEncoding4Varying<void *>() { return Encoding::VecPtr; }
 
 /* Takes encoding for varying type, returns encoding for corresponding uniform type.
@@ -113,8 +125,8 @@ template <> inline const char *type2Specifier<long long unsigned>() { return "%l
 template <> inline const char *type2Specifier<double>() { return "%f"; }
 
 // %s is because we will eventually print numbers that are not supported by underlying C calls
-template <> inline const char *type2Specifier<__int128_t>() { return "%s"; }
-template <> inline const char *type2Specifier<__uint128_t>() { return "%s"; }
+template <> inline const char *type2Specifier<int128_t>() { return "%s"; }
+template <> inline const char *type2Specifier<uint128_t>() { return "%s"; }
 
 template <> inline const char *type2Specifier<void *>() { return "%p"; }
 
@@ -142,8 +154,8 @@ template <typename Func, typename Encoder> inline bool switchEncoding(Encoding t
            applyIfProperEncoding<long long>(type, f, encoder) ||
            applyIfProperEncoding<unsigned long long>(type, f, encoder) ||
            applyIfProperEncoding<double>(type, f, encoder) ||
-           applyIfProperEncoding<__int128_t>(type, f, encoder) ||
-           applyIfProperEncoding<__uint128_t>(type, f, encoder) ||
+           applyIfProperEncoding<int128_t>(type, f, encoder) ||
+           applyIfProperEncoding<uint128_t>(type, f, encoder) ||
            applyIfProperEncoding<void *>(type, f, encoder);
 }
 

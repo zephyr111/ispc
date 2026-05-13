@@ -18,6 +18,8 @@
 
 #include "src/builtins-info.h"
 
+#include <inttypes.h>
+
 #ifndef PRId64
 #define PRId64 "lld"
 #endif
@@ -32,13 +34,13 @@ static inline const char *ValueAdapterImpl(bool val) { return val ? "true" : "fa
 
 // TODO [zephyr111]: FIXME: test this code carefully!
 
-static inline __int128_t Int128Abs(__int128_t v) {
+static inline int128_t Int128Abs(int128_t v) {
     return v < 0 ? -v : v;
 }
 
-static inline const char* ValueAdapterImpl(__int128_t v) {
+static inline const char* ValueAdapterImpl(int128_t v) {
     const int64_t val_1e18 = 1000000000000000000ll;
-    const __int128_t val_1e36 = (__int128_t)val_1e18 * val_1e18;
+    const int128_t val_1e36 = (int128_t)val_1e18 * val_1e18;
     thread_local char buff[64];
 
     if(-val_1e18 < v && v < val_1e18) {
@@ -47,24 +49,24 @@ static inline const char* ValueAdapterImpl(__int128_t v) {
     }
 
     if(-val_1e36 < v && v < val_1e36) {
-        const __int128_t hi = v / val_1e18;
-        const __int128_t lo = Int128Abs(v - hi * val_1e18);
+        const int128_t hi = v / val_1e18;
+        const int128_t lo = Int128Abs(v - hi * val_1e18);
         sprintf(buff, "%" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)lo);
     }
     else {
-        const __int128_t hi = v / val_1e36;
-        const __int128_t tmp = Int128Abs(v - hi * val_1e36);
-        const __int128_t mi = tmp / val_1e18;
-        const __int128_t lo = tmp % val_1e18;
+        const int128_t hi = v / val_1e36;
+        const int128_t tmp = Int128Abs(v - hi * val_1e36);
+        const int128_t mi = tmp / val_1e18;
+        const int128_t lo = tmp % val_1e18;
         sprintf(buff, "%" PRId64 "%018" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)mi, (int64_t)lo);
     }
 
     return buff;
 }
 
-static inline const char* ValueAdapterImpl(__uint128_t v) {
+static inline const char* ValueAdapterImpl(uint128_t v) {
     const uint64_t val_1e18 = 1000000000000000000ull;
-    const __uint128_t val_1e36 = (__uint128_t)val_1e18 * val_1e18;
+    const uint128_t val_1e36 = (uint128_t)val_1e18 * val_1e18;
     thread_local char buff[64];
 
     if(v < val_1e18) {
@@ -73,15 +75,15 @@ static inline const char* ValueAdapterImpl(__uint128_t v) {
     }
 
     if(v < val_1e36) {
-        const __uint128_t hi = v / val_1e18;
-        const __uint128_t lo = v - hi * val_1e18;
+        const uint128_t hi = v / val_1e18;
+        const uint128_t lo = v - hi * val_1e18;
         sprintf(buff, "%" PRIu64 "%018" PRIu64, (uint64_t)hi, (uint64_t)lo);
     }
     else {
-        const __uint128_t hi = v / val_1e36;
-        const __uint128_t tmp = v - hi * val_1e36;
-        const __uint128_t mi = tmp / val_1e18;
-        const __uint128_t lo = tmp % val_1e18;
+        const uint128_t hi = v / val_1e36;
+        const uint128_t tmp = v - hi * val_1e36;
+        const uint128_t mi = tmp / val_1e18;
+        const uint128_t lo = tmp % val_1e18;
         sprintf(buff, "%" PRIu64 "%018" PRIu64 "%018" PRIu64, (uint64_t)hi, (uint64_t)mi, (uint64_t)lo);
     }
 
@@ -154,8 +156,8 @@ template <typename ArgWriter> inline StaticString<ARG_STR_SIZE> Arg2Str(char typ
         Arg2StrIfSuitable<long long>(type, argWriter, res) ||
         Arg2StrIfSuitable<unsigned long long>(type, argWriter, res) ||
         Arg2StrIfSuitable<double>(type, argWriter, res) ||
-        Arg2StrIfSuitable<__int128_t>(type, argWriter, res) ||
-        Arg2StrIfSuitable<__uint128_t>(type, argWriter, res) ||
+        Arg2StrIfSuitable<int128_t>(type, argWriter, res) ||
+        Arg2StrIfSuitable<uint128_t>(type, argWriter, res) ||
         Arg2StrIfSuitable<void *>(type, argWriter, res);
     return res;
 }
