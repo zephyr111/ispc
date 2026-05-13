@@ -14,6 +14,7 @@
 #include "target_capabilities.h"
 #include "target_enums.h"
 #include "target_registry.h"
+#include "int128.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define ISPC_HOST_IS_WINDOWS

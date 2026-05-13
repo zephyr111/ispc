@@ -102,9 +102,9 @@ extern llvm::ConstantInt *LLVMInt64(int64_t i);
 /** Returns an LLVM i64 constant of the given value */
 extern llvm::ConstantInt *LLVMUInt64(uint64_t i);
 /** Returns an LLVM i128 constant of the given value */
-extern llvm::Constant *LLVMInt128(__int128_t i);
+extern llvm::Constant *LLVMInt128(int128_t i);
 /** Returns an LLVM i128 constant of the given value */
-extern llvm::Constant *LLVMUInt128(__uint128_t i);
+extern llvm::Constant *LLVMUInt128(uint128_t i);
 /** Returns an LLVM half constant of the given value */
 extern llvm::Constant *LLVMFloat16(llvm::APFloat f);
 /** Returns an LLVM float constant of the given value */
@@ -154,10 +154,10 @@ extern llvm::Constant *LLVMUInt64Vector(uint64_t i);
 
 /** Returns an LLVM i128 vector constant of the given value smeared
     across all elements */
-extern llvm::Constant *LLVMInt128Vector(__int128_t i);
+extern llvm::Constant *LLVMInt128Vector(int128_t i);
 /** Returns an LLVM i128 vector constant of the given value smeared
     across all elements */
-extern llvm::Constant *LLVMUInt128Vector(__uint128_t i);
+extern llvm::Constant *LLVMUInt128Vector(uint128_t i);
 
 /** Returns an LLVM half vector constant of the given value smeared
     across all elements */
@@ -171,11 +171,11 @@ extern llvm::Constant *LLVMDoubleVector(llvm::APFloat f);
 
 /** Returns a constant integer or vector (according to the given type) of
     the given signed integer value. */
-extern llvm::Constant *LLVMIntAsType(__int128_t, llvm::Type *t);
+extern llvm::Constant *LLVMIntAsType(int128_t, llvm::Type *t);
 
 /** Returns a constant integer or vector (according to the given type) of
     the given unsigned integer value. */
-extern llvm::Constant *LLVMUIntAsType(__uint128_t, llvm::Type *t);
+extern llvm::Constant *LLVMUIntAsType(uint128_t, llvm::Type *t);
 
 /** Returns a zero constant half/float/double or vector (according to the given type). */
 extern llvm::Constant *LLVMFPZeroAsType(llvm::Type *type);
@@ -223,10 +223,10 @@ extern llvm::Constant *LLVMUInt64Vector(const uint64_t *i);
 
 /** Returns an LLVM i128 vector based on the given array of values.
     The array should have g->target.vectorWidth elements. */
-extern llvm::Constant *LLVMInt128Vector(const __int128_t *i);
+extern llvm::Constant *LLVMInt128Vector(const int128_t *i);
 /** Returns an LLVM i128 vector based on the given array of values.
     The array should have g->target.vectorWidth elements. */
-extern llvm::Constant *LLVMUInt128Vector(const __uint128_t *i);
+extern llvm::Constant *LLVMUInt128Vector(const uint128_t *i);
 
 /** Returns an LLVM half vector based on the given array of values.
     The array should have g->target.vectorWidth elements. */

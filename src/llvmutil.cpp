@@ -236,16 +236,16 @@ llvm::ConstantInt *LLVMUInt64(uint64_t ival) {
 
 // TODO [zephyr111]: it looks like 128-bit integers cannot be stored in llvm::ConstantInt but llvm::Constant
 // TODO [zephyr111]: it also looks like the endianess is `{lowBits, highBits}`. Check this is true on all platforms
-llvm::Constant *LLVMInt128(__int128_t ival) {
+llvm::Constant *LLVMInt128(int128_t ival) {
     // TODO [zephyr111]: is the value properly signed like others and does this actually matters? see the other TODO in this file.
-    const uint64_t i128_parts[2] = {(uint64_t)(__uint128_t)ival, (uint64_t)((__uint128_t)ival >> 64)};
+    const uint64_t i128_parts[2] = {(uint64_t)(uint128_t)ival, (uint64_t)((uint128_t)ival >> 64)};
     const llvm::APInt i128_full(128, llvm::ArrayRef(i128_parts, 2));
     return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), i128_full);
 }
 
-llvm::Constant *LLVMUInt128(__uint128_t ival) {
+llvm::Constant *LLVMUInt128(uint128_t ival) {
     // TODO [zephyr111]: is the value properly signed like others and does this actually matters? see the other TODO in this file.
-    const uint64_t i128_parts[2] = {(uint64_t)(__uint128_t)ival, (uint64_t)((__uint128_t)ival >> 64)};
+    const uint64_t i128_parts[2] = {(uint64_t)(uint128_t)ival, (uint64_t)((uint128_t)ival >> 64)};
     const llvm::APInt i128_full(128, llvm::ArrayRef(i128_parts, 2));
     return llvm::ConstantInt::get(llvm::Type::getInt128Ty(*g->ctx), i128_full);
 }
@@ -460,7 +460,7 @@ llvm::Constant *LLVMUInt64Vector(const uint64_t *ivec) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMInt128Vector(__int128_t ival) {
+llvm::Constant *LLVMInt128Vector(int128_t ival) {
     llvm::Constant *v = LLVMInt128(ival);
     std::vector<llvm::Constant *> vals;
     for (int i = 0; i < g->target->getVectorWidth(); ++i) {
@@ -469,7 +469,7 @@ llvm::Constant *LLVMInt128Vector(__int128_t ival) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMInt128Vector(const __int128_t *ivec) {
+llvm::Constant *LLVMInt128Vector(const int128_t *ivec) {
     std::vector<llvm::Constant *> vals;
     for (int i = 0; i < g->target->getVectorWidth(); ++i) {
         vals.push_back(LLVMInt128(ivec[i]));
@@ -477,7 +477,7 @@ llvm::Constant *LLVMInt128Vector(const __int128_t *ivec) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMUInt128Vector(__uint128_t ival) {
+llvm::Constant *LLVMUInt128Vector(uint128_t ival) {
     llvm::Constant *v = LLVMUInt128(ival);
     std::vector<llvm::Constant *> vals;
     for (int i = 0; i < g->target->getVectorWidth(); ++i) {
@@ -486,7 +486,7 @@ llvm::Constant *LLVMUInt128Vector(__uint128_t ival) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMUInt128Vector(const __uint128_t *ivec) {
+llvm::Constant *LLVMUInt128Vector(const uint128_t *ivec) {
     std::vector<llvm::Constant *> vals;
     for (int i = 0; i < g->target->getVectorWidth(); ++i) {
         vals.push_back(LLVMUInt128(ivec[i]));
@@ -568,7 +568,7 @@ llvm::Constant *LLVMBoolVectorInStorage(const bool *bvec) {
     return llvm::ConstantVector::get(vals);
 }
 
-llvm::Constant *LLVMIntAsType(__int128_t val, llvm::Type *type) {
+llvm::Constant *LLVMIntAsType(int128_t val, llvm::Type *type) {
     llvm::FixedVectorType *vecType = llvm::dyn_cast<llvm::FixedVectorType>(type);
 
     if (vecType != nullptr) {
@@ -583,7 +583,7 @@ llvm::Constant *LLVMIntAsType(__int128_t val, llvm::Type *type) {
     }
 }
 
-llvm::Constant *LLVMUIntAsType(__uint128_t val, llvm::Type *type) {
+llvm::Constant *LLVMUIntAsType(uint128_t val, llvm::Type *type) {
     llvm::FixedVectorType *vecType = llvm::dyn_cast<llvm::FixedVectorType>(type);
 
     if (vecType != nullptr) {

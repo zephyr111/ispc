@@ -190,19 +190,19 @@ int TerminalWidth();
  */
 bool IsStdin(const char *);
 
-std::string ToString(__int128_t v);
-std::string ToString(__uint128_t v);
+std::string ToString(int128_t v);
+std::string ToString(uint128_t v);
 
 // Similar to strtoull, but for 128-bit integers.
 // Also detect the base 2 automatically if `base` is set to 0.
-__uint128_t StrToUint128(const char* start, const char** end, int base);
+uint128_t StrToUint128(const char* start, const char** end, int base);
 } // namespace ispc
 
 // Note: does not support ostream modifiers yet (like setw, fill, etc.)
-std::ostream& operator<<(std::ostream& stream, __int128_t v);
+std::ostream& operator<<(std::ostream& stream, int128_t v);
 
 // Note: does not support ostream modifiers yet (like setw, fill, etc.)
-std::ostream& operator<<(std::ostream& stream, __uint128_t v);
+std::ostream& operator<<(std::ostream& stream, uint128_t v);
 
 /** Global variable for yacc/bison parser debugging.
  *  Defined in the generated parser for main builds.

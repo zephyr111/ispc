@@ -186,7 +186,7 @@ struct ForeachDimension {
 %}
 
 %union {
-    __uint128_t intVal;
+    uint128_t intVal;
     float  floatVal;
     double doubleVal;
     std::string *stringVal;
@@ -536,11 +536,11 @@ primary_expression
     }
     | TOKEN_INT128_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
-                           (__int128_t)yylval.intVal, @1);
+                           (int128_t)yylval.intVal, @1);
     }
     | TOKEN_UINT128_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
-                           (__uint128_t)yylval.intVal, @1);
+                           (uint128_t)yylval.intVal, @1);
     }
     | TOKEN_FLOAT16_CONSTANT {
          std::string sval = *$1;
@@ -2591,11 +2591,11 @@ integer_dotdotdot
     }
     | TOKEN_INT128DOTDOTDOT_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
-                           (__int128_t)yylval.intVal, @1);
+                           (int128_t)yylval.intVal, @1);
     }
     | TOKEN_UINT128DOTDOTDOT_CONSTANT {
         $$ = new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
-                           (__uint128_t)yylval.intVal, @1);
+                           (uint128_t)yylval.intVal, @1);
     }
     ;
 
@@ -3124,11 +3124,11 @@ template_argument
     }
     | TOKEN_INT128_CONSTANT {
         $$ = new TemplateArg(new ConstExpr(AtomicType::UniformInt128->GetAsConstType(),
-                           (__int128_t)yylval.intVal, @1), @1);
+                           (int128_t)yylval.intVal, @1), @1);
     }
     | TOKEN_UINT128_CONSTANT {
         $$ = new TemplateArg(new ConstExpr(AtomicType::UniformUInt128->GetAsConstType(),
-                           (__uint128_t)yylval.intVal, @1), @1);
+                           (uint128_t)yylval.intVal, @1), @1);
     }
     | TOKEN_TRUE {
         $$ = new TemplateArg(new ConstExpr(AtomicType::UniformBool->GetAsConstType(), true, @1), @1);

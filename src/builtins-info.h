@@ -12,17 +12,7 @@
 #ifndef ISPC_BUILTINS_INFO_H
 #define ISPC_BUILTINS_INFO_H 1
 
-#include <stdint.h>
-
-#ifndef UINT128_MAX
-#if defined(__clang_major__) && __clang_major__ >= 18 || defined(__GNUC__) && __GNUC__ >= 14
-using int128_t = _BitInt(128);
-using uint128_t = unsigned _BitInt(128);
-#elif defined(__SIZEOF_INT128__)
-using int128_t = __int128;
-using uint128_t = unsigned __int128;
-#endif
-#endif
+#include "../src/int128.h"
 
 namespace PrintInfo {
 

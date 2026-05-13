@@ -1105,13 +1105,13 @@ static llvm::Constant *lLLVMConstantValue(const Type *type, llvm::LLVMContext *c
             return isUniform ? LLVMUInt64(i) : LLVMUInt64Vector(i);
         }
         case AtomicType::TYPE_INT128: {
-            __int128_t i = (__int128_t)value;
+            int128_t i = (int128_t)value;
             Assert((double)i == value);
             return isUniform ? LLVMInt128(i) : LLVMInt128Vector(i);
         }
         case AtomicType::TYPE_UINT128: {
-            __uint128_t i = (__uint128_t)value;
-            Assert(value == (__int128_t)i);
+            uint128_t i = (uint128_t)value;
+            Assert(value == (int128_t)i);
             return isUniform ? LLVMUInt128(i) : LLVMUInt128Vector(i);
         }
         case AtomicType::TYPE_FLOAT16: {
@@ -1435,10 +1435,10 @@ Expr *UnaryExpr::Optimize() {
     case Negate: {
         if (Type::EqualIgnoringConst(type, AtomicType::UniformInt128) ||
             Type::EqualIgnoringConst(type, AtomicType::VaryingInt128)) {
-            return lOptimizeNegate<__int128_t>(constExpr, type, pos);
+            return lOptimizeNegate<int128_t>(constExpr, type, pos);
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt128) ||
                    Type::EqualIgnoringConst(type, AtomicType::VaryingUInt128)) {
-            return lOptimizeNegate<__uint128_t>(constExpr, type, pos);
+            return lOptimizeNegate<uint128_t>(constExpr, type, pos);
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformInt64) ||
             Type::EqualIgnoringConst(type, AtomicType::VaryingInt64)) {
             return lOptimizeNegate<int64_t>(constExpr, type, pos);
@@ -1505,10 +1505,10 @@ Expr *UnaryExpr::Optimize() {
             return lOptimizeBitNot<uint64_t>(constExpr, type, pos);
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformInt128) ||
                    Type::EqualIgnoringConst(type, AtomicType::VaryingInt128)) {
-            return lOptimizeBitNot<__int128_t>(constExpr, type, pos);
+            return lOptimizeBitNot<int128_t>(constExpr, type, pos);
         } else if (Type::EqualIgnoringConst(type, AtomicType::UniformUInt128) ||
                    Type::EqualIgnoringConst(type, AtomicType::VaryingUInt128)) {
-            return lOptimizeBitNot<__uint128_t>(constExpr, type, pos);
+            return lOptimizeBitNot<uint128_t>(constExpr, type, pos);
         } else {
             FATAL("unexpected type in UnaryExpr::Optimize() / BitNot case");
         }
@@ -2828,9 +2828,9 @@ Expr *BinaryExpr::Optimize() {
     } else if (Type::Equal(type, AtomicType::UniformUInt64) || Type::Equal(type, AtomicType::VaryingUInt64)) {
         return lConstFoldBinaryIntOp<uint64_t, uint64_t>(constArg0, constArg1, op, this, pos);
     } else if (Type::Equal(type, AtomicType::UniformInt128) || Type::Equal(type, AtomicType::VaryingInt128)) {
-        return lConstFoldBinaryIntOp<__int128_t, __int128_t>(constArg0, constArg1, op, this, pos);
+        return lConstFoldBinaryIntOp<int128_t, int128_t>(constArg0, constArg1, op, this, pos);
     } else if (Type::Equal(type, AtomicType::UniformUInt128) || Type::Equal(type, AtomicType::VaryingUInt128)) {
-        return lConstFoldBinaryIntOp<__uint128_t, __uint128_t>(constArg0, constArg1, op, this, pos);
+        return lConstFoldBinaryIntOp<uint128_t, uint128_t>(constArg0, constArg1, op, this, pos);
     } else if (Type::Equal(type, AtomicType::UniformBool) || Type::Equal(type, AtomicType::VaryingBool)) {
         bool v0[ISPC_MAX_NVEC], v1[ISPC_MAX_NVEC];
         constArg0->GetValues(v0);
@@ -4050,9 +4050,9 @@ Expr *SelectExpr::Optimize() {
         } else if (Type::Equal(exprType, AtomicType::VaryingUInt64)) {
             return lConstFoldSelect<uint64_t>(bv, constExpr1, constExpr2, exprType, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingInt128)) {
-            return lConstFoldSelect<__int128_t>(bv, constExpr1, constExpr2, exprType, pos);
+            return lConstFoldSelect<int128_t>(bv, constExpr1, constExpr2, exprType, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingUInt128)) {
-            return lConstFoldSelect<__uint128_t>(bv, constExpr1, constExpr2, exprType, pos);
+            return lConstFoldSelect<uint128_t>(bv, constExpr1, constExpr2, exprType, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingFloat16)) {
             return lConstFoldSelectFP(bv, constExpr1, constExpr2, exprType, LLVMTypes::Float16Type, pos);
         } else if (Type::Equal(exprType, AtomicType::VaryingFloat)) {
@@ -6357,14 +6357,14 @@ ConstExpr::ConstExpr(const Type *t, uint64_t *u, SourcePos p) : Expr(p, ConstExp
     }
 }
 
-ConstExpr::ConstExpr(const Type *t, __int128_t i, SourcePos p) : Expr(p, ConstExprID) {
+ConstExpr::ConstExpr(const Type *t, int128_t i, SourcePos p) : Expr(p, ConstExprID) {
     type = t;
     type = type->GetAsConstType();
     AssertPos(pos, Type::Equal(type, AtomicType::UniformInt128->GetAsConstType()));
     int128Val[0] = i;
 }
 
-ConstExpr::ConstExpr(const Type *t, __int128_t *i, SourcePos p) : Expr(p, ConstExprID) {
+ConstExpr::ConstExpr(const Type *t, int128_t *i, SourcePos p) : Expr(p, ConstExprID) {
     type = t;
     type = type->GetAsConstType();
     AssertPos(pos, Type::Equal(type, AtomicType::UniformInt128->GetAsConstType()) ||
@@ -6374,14 +6374,14 @@ ConstExpr::ConstExpr(const Type *t, __int128_t *i, SourcePos p) : Expr(p, ConstE
     }
 }
 
-ConstExpr::ConstExpr(const Type *t, __uint128_t u, SourcePos p) : Expr(p, ConstExprID) {
+ConstExpr::ConstExpr(const Type *t, uint128_t u, SourcePos p) : Expr(p, ConstExprID) {
     type = t;
     type = type->GetAsConstType();
     AssertPos(pos, Type::Equal(type, AtomicType::UniformUInt128->GetAsConstType()));
     uint128Val[0] = u;
 }
 
-ConstExpr::ConstExpr(const Type *t, __uint128_t *u, SourcePos p) : Expr(p, ConstExprID) {
+ConstExpr::ConstExpr(const Type *t, uint128_t *u, SourcePos p) : Expr(p, ConstExprID) {
     type = t;
     type = type->GetAsConstType();
     AssertPos(pos, Type::Equal(type, AtomicType::UniformUInt128->GetAsConstType()) ||
@@ -6798,9 +6798,9 @@ int ConstExpr::GetValues(int64_t *toPtr, bool forceVarying) const { CONVERT_SWIT
 
 int ConstExpr::GetValues(uint64_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
 
-int ConstExpr::GetValues(__int128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
+int ConstExpr::GetValues(int128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
 
-int ConstExpr::GetValues(__uint128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
+int ConstExpr::GetValues(uint128_t *toPtr, bool forceVarying) const { CONVERT_SWITCH; }
 
 int ConstExpr::Count() const { return GetType()->IsVaryingType() ? g->target->getVectorWidth() : 1; }
 
@@ -6898,7 +6898,7 @@ static std::pair<llvm::Constant *, bool> lGetConstExprConstant(const Type *const
             return std::pair<llvm::Constant *, bool>(LLVMUInt64Vector(uiv), isNotValidForMultiTargetGlobal);
         }
     } else if (Type::Equal(constType, AtomicType::UniformInt128) || Type::Equal(constType, AtomicType::VaryingInt128)) {
-        __int128_t iv[ISPC_MAX_NVEC];
+        int128_t iv[ISPC_MAX_NVEC];
         cExpr->GetValues(iv, constType->IsVaryingType());
         if (constType->IsUniformType()) {
             return std::pair<llvm::Constant *, bool>(LLVMInt128(iv[0]), isNotValidForMultiTargetGlobal);
@@ -6906,7 +6906,7 @@ static std::pair<llvm::Constant *, bool> lGetConstExprConstant(const Type *const
             return std::pair<llvm::Constant *, bool>(LLVMInt128Vector(iv), isNotValidForMultiTargetGlobal);
         }
     } else if (Type::Equal(constType, AtomicType::UniformUInt128) || Type::Equal(constType, AtomicType::VaryingUInt128)) {
-        __uint128_t uiv[ISPC_MAX_NVEC];
+        uint128_t uiv[ISPC_MAX_NVEC];
         cExpr->GetValues(uiv, constType->IsVaryingType());
         if (constType->IsUniformType()) {
             return std::pair<llvm::Constant *, bool>(LLVMUInt128(uiv[0]), isNotValidForMultiTargetGlobal);
@@ -8537,12 +8537,12 @@ Expr *TypeCastExpr::Optimize() {
         return new ConstExpr(toType, uv, pos);
     }
     case AtomicType::TYPE_INT128: {
-        __int128_t iv[ISPC_MAX_NVEC];
+        int128_t iv[ISPC_MAX_NVEC];
         constExpr->GetValues(iv, forceVarying);
         return new ConstExpr(toType, iv, pos);
     }
     case AtomicType::TYPE_UINT128: {
-        __uint128_t uv[ISPC_MAX_NVEC];
+        uint128_t uv[ISPC_MAX_NVEC];
         constExpr->GetValues(uv, forceVarying);
         return new ConstExpr(toType, uv, pos);
     }

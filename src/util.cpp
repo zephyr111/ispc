@@ -640,31 +640,31 @@ bool ispc::IsStdin(const char *filepath) {
     }
 }
 
-static inline __int128_t Int128Abs(__int128_t v) {
+static inline int128_t Int128Abs(int128_t v) {
     return v < 0 ? -v : v;
 }
 
 // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
-std::string ispc::ToString(__int128_t v) {
+std::string ispc::ToString(int128_t v) {
     const int64_t val_1e18 = 1000000000000000000ll;
-    const __int128_t val_1e36 = (__int128_t)val_1e18 * val_1e18;
+    const int128_t val_1e36 = (int128_t)val_1e18 * val_1e18;
     std::ostringstream oss;
 
     if(v > -val_1e18 && v < val_1e18)
         return std::to_string((int64_t)v);
 
     if(-val_1e36 < v && v < val_1e36) {
-        const __int128_t hi = v / val_1e18;
-        const __int128_t lo = Int128Abs(v - hi * val_1e18);
+        const int128_t hi = v / val_1e18;
+        const int128_t lo = Int128Abs(v - hi * val_1e18);
         oss << (int64_t)hi;
         oss.fill('0');
         oss << std::setw(9) << (int64_t)lo;
     }
     else {
-        const __int128_t hi = v / val_1e36;
-        const __int128_t tmp = Int128Abs(v - hi * val_1e36);
-        const __int128_t mi = tmp / val_1e18;
-        const __int128_t lo = tmp % val_1e18;
+        const int128_t hi = v / val_1e36;
+        const int128_t tmp = Int128Abs(v - hi * val_1e36);
+        const int128_t mi = tmp / val_1e18;
+        const int128_t lo = tmp % val_1e18;
         oss << (int64_t)hi;
         oss.fill('0');
         oss << std::setw(9) << (int64_t)mi;
@@ -675,26 +675,26 @@ std::string ispc::ToString(__int128_t v) {
 }
 
 // TODO [zephyr111]: FIXME: test this code carefully!
-std::string ispc::ToString(__uint128_t v) {
+std::string ispc::ToString(uint128_t v) {
     const uint64_t val_1e18 = 1000000000000000000ull;
-    const __uint128_t val_1e36 = (__uint128_t)val_1e18 * val_1e18;
+    const uint128_t val_1e36 = (uint128_t)val_1e18 * val_1e18;
     std::ostringstream oss;
 
     if(v < val_1e18)
         return std::to_string((uint64_t)v);
 
     if(v < val_1e36) {
-        const __uint128_t hi = v / val_1e18;
-        const __uint128_t lo = v - hi * val_1e18;
+        const uint128_t hi = v / val_1e18;
+        const uint128_t lo = v - hi * val_1e18;
         oss << (uint64_t)hi;
         oss.fill('0');
         oss << std::setw(9) << (uint64_t)lo;
     }
     else {
-        const __uint128_t hi = v / val_1e36;
-        const __uint128_t tmp = v - hi * val_1e36;
-        const __uint128_t mi = tmp / val_1e18;
-        const __uint128_t lo = tmp % val_1e18;
+        const uint128_t hi = v / val_1e36;
+        const uint128_t tmp = v - hi * val_1e36;
+        const uint128_t mi = tmp / val_1e18;
+        const uint128_t lo = tmp % val_1e18;
         oss << (uint64_t)hi;
         oss.fill('0');
         oss << std::setw(9) << (uint64_t)mi;
@@ -705,7 +705,7 @@ std::string ispc::ToString(__uint128_t v) {
 }
 
 // TODO [zephyr111]: FIXME: test this code carefully!
-__uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
+uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
     bool isBase2 = base == 2;
     bool isBase8 = base == 8;
     bool isBase10 = base == 10;
@@ -719,7 +719,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
         if(end != nullptr)
             *end = ptr;
         errno = EINVAL;
-        return std::numeric_limits<__uint128_t>::max();
+        return std::numeric_limits<uint128_t>::max();
     }
 
     // Auto-detection of `base` based on the prefix
@@ -749,41 +749,41 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
         if(end != nullptr)
             *end = ptr;
         errno = EINVAL;
-        return std::numeric_limits<__uint128_t>::max();
+        return std::numeric_limits<uint128_t>::max();
     }
 
-    __uint128_t val = 0;
+    uint128_t val = 0;
 
     if (isBase2) {
-        const __uint128_t highBits = ((__uint128_t)1) << 127;
+        const uint128_t highBits = ((uint128_t)1) << 127;
 
         while (*ptr == '0' || *ptr == '1') {
             if ((val & highBits) != 0) [[unlikely]] {
                 if(end != nullptr)
                     *end = ptr;
                 errno = ERANGE;
-                return std::numeric_limits<__uint128_t>::max();
+                return std::numeric_limits<uint128_t>::max();
             }
 
             val = (val << 1) | (*ptr - '0');
             ++ptr;
         }
     } else if (isBase8) {
-        const __uint128_t highBits = ((__uint128_t)1) << 125;
+        const uint128_t highBits = ((uint128_t)1) << 125;
 
         while (*ptr >= '0' && *ptr <= '7') {
             if ((val & highBits) != 0) [[unlikely]] {
                 if(end != nullptr)
                     *end = ptr;
                 errno = ERANGE;
-                return std::numeric_limits<__uint128_t>::max();
+                return std::numeric_limits<uint128_t>::max();
             }
 
             val = (val << 3) | (*ptr - '0');
             ++ptr;
         }
     } else if (isBase10) {
-        const __uint128_t limit = (((__uint128_t)0x1999999999999999) << 64) | 0x9999999999999999;
+        const uint128_t limit = (((uint128_t)0x1999999999999999) << 64) | 0x9999999999999999;
 
         while (*ptr >= '0' && *ptr <= '9') {
             if (val >= limit) {
@@ -791,7 +791,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
                     if(end != nullptr)
                         *end = ptr;
                     errno = ERANGE;
-                    return std::numeric_limits<__uint128_t>::max();
+                    return std::numeric_limits<uint128_t>::max();
                 }
             }
 
@@ -799,7 +799,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
             ++ptr;
         }
     } else if (isBase16) {
-        const __uint128_t highBits = ((__uint128_t)1) << 124;
+        const uint128_t highBits = ((uint128_t)1) << 124;
         const uint8_t no = 0xFF;
         static const uint8_t LUT[256] = {
             no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
@@ -825,7 +825,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
                 if(end != nullptr)
                     *end = ptr;
                 errno = ERANGE;
-                return std::numeric_limits<__uint128_t>::max();
+                return std::numeric_limits<uint128_t>::max();
             }
 
             val = (val << 4) | LUT[(uint8_t)*ptr];
@@ -836,7 +836,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
         if(end != nullptr)
             *end = ptr;
         errno = EINVAL;
-        return std::numeric_limits<__uint128_t>::max();
+        return std::numeric_limits<uint128_t>::max();
     }
 
     // TODO [zephyr111]: be sure trailing invalid numbers are just ignored
@@ -846,7 +846,7 @@ __uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
     return val;
 }
 
-std::ostream& operator<<(std::ostream& stream, __int128_t v) {
+std::ostream& operator<<(std::ostream& stream, int128_t v) {
     const int64_t val_1e9 = 1000000000ll;
 
     if(v < val_1e9)
@@ -857,7 +857,7 @@ std::ostream& operator<<(std::ostream& stream, __int128_t v) {
     return stream;
 }
 
-std::ostream& operator<<(std::ostream& stream, __uint128_t v) {
+std::ostream& operator<<(std::ostream& stream, uint128_t v) {
     const uint64_t val_1e9 = 1000000000ull;
 
     if(v < val_1e9)

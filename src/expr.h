@@ -496,13 +496,13 @@ class ConstExpr : public Expr {
     ConstExpr(const Type *t, uint64_t *i, SourcePos p);
 
     /** Create a ConstExpr from a uniform int128 value */
-    ConstExpr(const Type *t, __int128_t i, SourcePos p);
+    ConstExpr(const Type *t, int128_t i, SourcePos p);
     /** Create a ConstExpr from a varying int128 value */
-    ConstExpr(const Type *t, __int128_t *i, SourcePos p);
+    ConstExpr(const Type *t, int128_t *i, SourcePos p);
     /** Create a ConstExpr from a uniform uint128 value */
-    ConstExpr(const Type *t, __uint128_t i, SourcePos p);
+    ConstExpr(const Type *t, uint128_t i, SourcePos p);
     /** Create a ConstExpr from a varying uint128 value */
-    ConstExpr(const Type *t, __uint128_t *i, SourcePos p);
+    ConstExpr(const Type *t, uint128_t *i, SourcePos p);
 
     /** Create a ConstExpr from a uniform bool value */
     ConstExpr(const Type *t, bool b, SourcePos p);
@@ -545,8 +545,8 @@ class ConstExpr : public Expr {
     int GetValues(uint32_t *, bool forceVarying = false) const;
     int GetValues(int64_t *, bool forceVarying = false) const;
     int GetValues(uint64_t *, bool forceVarying = false) const;
-    int GetValues(__int128_t *, bool forceVarying = false) const;
-    int GetValues(__uint128_t *, bool forceVarying = false) const;
+    int GetValues(int128_t *, bool forceVarying = false) const;
+    int GetValues(uint128_t *, bool forceVarying = false) const;
     int GetValues(std::vector<llvm::APFloat> &) const;
 
     /** Return the ConstExpr's values as a string. */
@@ -578,8 +578,8 @@ class ConstExpr : public Expr {
         bool boolVal[ISPC_MAX_NVEC];
         int64_t int64Val[ISPC_MAX_NVEC];
         uint64_t uint64Val[ISPC_MAX_NVEC];
-        __int128_t int128Val[ISPC_MAX_NVEC];
-        __uint128_t uint128Val[ISPC_MAX_NVEC];
+        int128_t int128Val[ISPC_MAX_NVEC];
+        uint128_t uint128Val[ISPC_MAX_NVEC];
     };
     std::vector<llvm::APFloat> fpVal;
 };

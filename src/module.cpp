@@ -558,9 +558,9 @@ Expr *lConvertExprListToConstExpr(Expr *initExpr, const Type *type, const std::s
         case AtomicType::TYPE_UINT64:
             return lCreateConstExpr<uint64_t *>(exprList, basicType, type, name, pos);
         case AtomicType::TYPE_INT128:
-            return lCreateConstExpr<__int128_t *>(exprList, basicType, type, name, pos);
+            return lCreateConstExpr<int128_t *>(exprList, basicType, type, name, pos);
         case AtomicType::TYPE_UINT128:
-            return lCreateConstExpr<__uint128_t *>(exprList, basicType, type, name, pos);
+            return lCreateConstExpr<uint128_t *>(exprList, basicType, type, name, pos);
         case AtomicType::TYPE_FLOAT16:
         case AtomicType::TYPE_FLOAT:
         case AtomicType::TYPE_DOUBLE:

@@ -681,9 +681,9 @@ lParseInteger(bool dotdotdot) {
                 return TOKEN_UINT32_CONSTANT;
             else if (yylval.intVal <= 0x7fffffffffffffffULL)
                 return TOKEN_INT64_CONSTANT;
-            else if (yylval.intVal <= (__uint128_t)0xffffffffffffffffULL)
+            else if (yylval.intVal <= (uint128_t)0xffffffffffffffffULL)
                 return TOKEN_UINT64_CONSTANT;
-            else if (yylval.intVal <= ((((__uint128_t)0x7fffffffffffffffULL) << 64ull) | 0xffffffffffffffffULL))
+            else if (yylval.intVal <= ((((uint128_t)0x7fffffffffffffffULL) << 64ull) | 0xffffffffffffffffULL))
                 return TOKEN_INT128_CONSTANT;
             else
                 return TOKEN_UINT128_CONSTANT;
