@@ -97,6 +97,12 @@ __declspec(safe) static inline unsigned int64 broadcast(unsigned int64 v, unifor
     return __broadcast_i64(v, i);
 }
 
+__declspec(safe) static inline int128 broadcast(int128 v, uniform int i) { return __broadcast_i128(v, i); }
+
+__declspec(safe) static inline unsigned int128 broadcast(unsigned int128 v, uniform int i) {
+    return __broadcast_i128(v, i);
+}
+
 template <typename T> unmasked varying T __rotate_via_shuffle(varying T v, uniform int32 i) {
     // Pre-computed shuffle masks for each rotation
 #if TARGET_WIDTH == 4
@@ -492,6 +498,22 @@ __declspec(safe) static inline unsigned int64 rotate(unsigned int64 v, uniform i
     }
 }
 
+__declspec(safe) static inline int128 rotate(int128 v, uniform int i) {
+    if (__have_rotate_via_shuffle_128) {
+        return __rotate_via_shuffle(v, i);
+    } else {
+        return __rotate_i128(v, i);
+    }
+}
+
+__declspec(safe) static inline unsigned int128 rotate(unsigned int128 v, uniform int i) {
+    if (__have_rotate_via_shuffle_128) {
+        return __rotate_via_shuffle(v, i);
+    } else {
+        return __rotate_i128(v, i);
+    }
+}
+
 template <typename T> unmasked varying T __shift_via_shuffle(varying T v, uniform int32 i) {
     // Unlike circular shift (rotate), this is a linear shift that nullifies
     // out-of-bounds elements (not wrapping around).
@@ -616,6 +638,26 @@ __declspec(safe) static inline unsigned int64 shift(unsigned int64 v, uniform in
     }
 }
 
+__declspec(safe) static inline int128 shift(int128 v, uniform int i) {
+    if (__have_shift_via_shuffle_128) {
+        return __shift_via_shuffle(v, i);
+    } else {
+        varying int128 result;
+        unmasked { result = __shift_i128(v, i); }
+        return result;
+    }
+}
+
+__declspec(safe) static inline unsigned int128 shift(unsigned int128 v, uniform int i) {
+    if (__have_shift_via_shuffle_128) {
+        return __shift_via_shuffle(v, i);
+    } else {
+        varying unsigned int128 result;
+        unmasked { result = __shift_i128(v, i); }
+        return result;
+    }
+}
+
 __declspec(safe) static inline float shuffle(float v, int i) { return __shuffle_float(v, i); }
 
 __declspec(safe) static inline int8 shuffle(int8 v, int i) { return __shuffle_i8(v, i); }
@@ -637,6 +679,10 @@ __declspec(safe) static inline double shuffle(double v, int i) { return __shuffl
 __declspec(safe) static inline int64 shuffle(int64 v, int i) { return __shuffle_i64(v, i); }
 
 __declspec(safe) static inline unsigned int64 shuffle(unsigned int64 v, int i) { return __shuffle_i64(v, i); }
+
+__declspec(safe) static inline int128 shuffle(int128 v, int i) { return __shuffle_i128(v, i); }
+
+__declspec(safe) static inline unsigned int128 shuffle(unsigned int128 v, int i) { return __shuffle_i128(v, i); }
 
 __declspec(safe) static inline float shuffle(float v0, float v1, int i) { return __shuffle2_float(v0, v1, i); }
 
@@ -666,6 +712,12 @@ __declspec(safe) static inline int64 shuffle(int64 v0, int64 v1, int i) { return
 
 __declspec(safe) static inline unsigned int64 shuffle(unsigned int64 v0, unsigned int64 v1, int i) {
     return __shuffle2_i64(v0, v1, i);
+}
+
+__declspec(safe) static inline int128 shuffle(int128 v0, int128 v1, int i) { return __shuffle2_i128(v0, v1, i); }
+
+__declspec(safe) static inline unsigned int128 shuffle(unsigned int128 v0, unsigned int128 v1, int i) {
+    return __shuffle2_i128(v0, v1, i);
 }
 
 // x[i]
@@ -706,7 +758,13 @@ __declspec(safe, cost1) static inline uniform int64 extract(int64 x, uniform int
 __declspec(safe, cost1) static inline uniform unsigned int64 extract(unsigned int64 x, uniform int i) {
     return __extract_int64(x, (uniform unsigned int)i);
 }
-// x[i] = v
+
+__declspec(safe, cost1) static inline uniform int128 extract(int128 x, uniform int i) { return __extract_int128(x, i); }
+
+__declspec(safe, cost1) static inline uniform unsigned int128 extract(unsigned int128 x, uniform int i) {
+    return __extract_int128(x, (uniform unsigned int)i);
+}
+
 __declspec(safe, cost1) static inline float insert(float x, uniform int i, uniform float v) {
     return floatbits(__insert_int32((int)intbits(x), i, (uniform int)intbits(v)));
 }
@@ -755,6 +813,14 @@ __declspec(safe, cost1) static inline unsigned int64 insert(unsigned int64 x, un
     return __insert_int64(x, (uniform unsigned int)i, v);
 }
 
+__declspec(safe, cost1) static inline int128 insert(int128 x, uniform int i, uniform int128 v) {
+    return __insert_int128(x, i, v);
+}
+
+__declspec(safe, cost1) static inline unsigned int128 insert(unsigned int128 x, uniform int i, uniform unsigned int128 v) {
+    return __insert_int128(x, (uniform unsigned int)i, v);
+}
+
 __declspec(safe, cost1) static inline uniform int32 sign_extend(uniform bool v) { return __sext_uniform_bool(v); }
 
 __declspec(safe, cost1) static inline int32 sign_extend(bool v) { return __sext_varying_bool(v); }
@@ -799,11 +865,15 @@ __declspec(safe) static inline uniform int32 popcnt(uniform int32 v) { return __
 
 __declspec(safe) static inline uniform int32 popcnt(uniform int64 v) { return __popcnt_int64_uniform(v); }
 
+__declspec(safe) static inline uniform int32 popcnt(uniform int128 v) { return __popcnt_int128_uniform(v); }
+
 __declspec(safe) static inline varying int32 popcnt(varying int32 v) { return __popcnt_int32_varying(v, __mask); }
 
 __declspec(safe) static inline varying int32 popcnt(varying int64 v) { return __popcnt_int64_varying(v, __mask); }
 
-__declspec(safe) static inline uniform int popcnt(bool v) {
+__declspec(safe) static inline varying int32 popcnt(varying int128 v) { return __popcnt_int128_varying(v, __mask); }
+
+__declspec(safe) static inline uniform int32 popcnt(bool v) {
     // As with any() and all(), only count across the active lanes
 #if (ISPC_MASK_BITS == 1)
     return __popcnt_int64_uniform(__movmsk(v & __mask));
@@ -1022,12 +1092,18 @@ static inline void memset64(void *varying ptr, int8 val, int64 count) {
 ///////////////////////////////////////////////////////////////////////////
 // count leading/trailing zeros
 
+// TODO [zephyr111]: see the related note in `generic.ispc`
+
 __declspec(safe, cost1) static inline uniform unsigned int32 count_leading_zeros(uniform unsigned int32 v) {
     return __count_leading_zeros_uniform_i32(v);
 }
 
 __declspec(safe, cost1) static inline uniform unsigned int64 count_leading_zeros(uniform unsigned int64 v) {
     return __count_leading_zeros_uniform_i64(v);
+}
+
+__declspec(safe, cost1) static inline uniform unsigned int32 count_leading_zeros(uniform unsigned int128 v) {
+    return __count_leading_zeros_uniform_i128(v);
 }
 
 __declspec(safe, cost1) static inline uniform unsigned int32 count_trailing_zeros(uniform unsigned int32 v) {
@@ -1038,6 +1114,10 @@ __declspec(safe, cost1) static inline uniform unsigned int64 count_trailing_zero
     return __count_trailing_zeros_uniform_i64(v);
 }
 
+__declspec(safe, cost1) static inline uniform unsigned int32 count_trailing_zeros(uniform unsigned int128 v) {
+    return __count_trailing_zeros_uniform_i128(v);
+}
+
 __declspec(safe, cost1) static inline uniform int32 count_leading_zeros(uniform int32 v) {
     return __count_leading_zeros_uniform_i32(v);
 }
@@ -1046,12 +1126,20 @@ __declspec(safe, cost1) static inline uniform int64 count_leading_zeros(uniform 
     return __count_leading_zeros_uniform_i64(v);
 }
 
+__declspec(safe, cost1) static inline uniform int32 count_leading_zeros(uniform int128 v) {
+    return __count_leading_zeros_uniform_i128(v);
+}
+
 __declspec(safe, cost1) static inline uniform int32 count_trailing_zeros(uniform int32 v) {
     return __count_trailing_zeros_uniform_i32(v);
 }
 
 __declspec(safe, cost1) static inline uniform int64 count_trailing_zeros(uniform int64 v) {
     return __count_trailing_zeros_uniform_i64(v);
+}
+
+__declspec(safe, cost1) static inline uniform int32 count_trailing_zeros(uniform int128 v) {
+    return __count_trailing_zeros_uniform_i128(v);
 }
 
 __declspec(safe) static inline unsigned int32 count_leading_zeros(unsigned int32 v) {
@@ -1076,6 +1164,17 @@ __declspec(safe) static inline unsigned int64 count_leading_zeros(unsigned int64
     }
 }
 
+__declspec(safe) static inline unsigned int32 count_leading_zeros(unsigned int128 v) {
+    if (__have_conflict_detection) {
+        return __count_leading_zeros_varying_i128(v);
+    } else {
+        unsigned int32 r;
+        for (uniform int i = 0; i < programCount; ++i)
+            r = insert(r, i, (uniform unsigned int32)__count_leading_zeros_uniform_i128(extract(v, i)));
+        return r;
+    }
+}
+
 __declspec(safe) static inline unsigned int32 count_trailing_zeros(unsigned int32 v) {
     // Using the vector LLVM's cttz intrinsic is more efficient than
     // counting trailing zeros in a loop. However, it is not true for ctlz -
@@ -1090,6 +1189,10 @@ __declspec(safe) static inline unsigned int64 count_trailing_zeros(unsigned int6
     // a loop of uniform calculations performs better than vector LLVM's ctlz intrinsic.
     // https://github.com/llvm/llvm-project/issues/124993
     return __count_trailing_zeros_varying_i64(v);
+}
+
+__declspec(safe) static inline unsigned int32 count_trailing_zeros(unsigned int128 v) {
+    return __count_trailing_zeros_varying_i128(v);
 }
 
 __declspec(safe) static inline int32 count_leading_zeros(int32 v) {
@@ -1114,6 +1217,17 @@ __declspec(safe) static inline int64 count_leading_zeros(int64 v) {
     }
 }
 
+__declspec(safe) static inline int32 count_leading_zeros(int128 v) {
+    if (__have_conflict_detection) {
+        return __count_leading_zeros_varying_i128(v);
+    } else {
+        int32 r;
+        for (uniform int i = 0; i < programCount; ++i)
+            r = insert(r, i, __count_leading_zeros_uniform_i128(extract(v, i)));
+        return r;
+    }
+}
+
 __declspec(safe) static inline int32 count_trailing_zeros(int32 v) {
     // Using the vector LLVM's cttz intrinsic is more efficient than
     // counting trailing zeros in a loop. However, it is not true for ctlz -
@@ -1128,6 +1242,10 @@ __declspec(safe) static inline int64 count_trailing_zeros(int64 v) {
     // a loop of uniform calculations performs better than vector LLVM's ctlz intrinsic.
     // https://github.com/llvm/llvm-project/issues/124993
     return __count_trailing_zeros_varying_i64(v);
+}
+
+__declspec(safe) static inline int32 count_trailing_zeros(int128 v) {
+    return __count_trailing_zeros_varying_i128(v);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1460,6 +1578,18 @@ __declspec(safe, cost1) static inline uniform int64 select(uniform bool cond, un
     return cond ? t : f;
 }
 
+__declspec(safe, cost1) static inline int128 select(bool cond, int128 t, int128 f) { return cond ? t : f; }
+
+__declspec(safe, cost1) static inline uint128 select(bool cond, uint128 t, uint128 f) { return cond ? t : f; }
+
+__declspec(safe, cost1) static inline int128 select(uniform bool cond, int128 t, int128 f) { return cond ? t : f; }
+
+__declspec(safe, cost1) static inline uint128 select(uniform bool cond, uint128 t, uint128 f) { return cond ? t : f; }
+
+__declspec(safe, cost1) static inline uniform int128 select(uniform bool cond, uniform int128 t, uniform int128 f) {
+    return cond ? t : f;
+}
+
 __declspec(safe, cost1) static inline float select(bool cond, float t, float f) { return cond ? t : f; }
 
 __declspec(safe, cost1) static inline float select(uniform bool cond, float t, float f) { return cond ? t : f; }
@@ -1602,13 +1732,13 @@ __declspec(safe) static inline uniform int64 reduce_add(int32 x) {
     return __reduce_add_int32(__mask ? x : 0);
 }
 
-__declspec(safe) static inline uniform int reduce_min(int v) {
+__declspec(safe) static inline uniform int32 reduce_min(int32 v) {
     // Set values for non-running lanes to the maximum integer value so
     // they don't affect the result.
     return __reduce_min_int32(__mask ? v : INT32_MAX);
 }
 
-__declspec(safe) static inline uniform int reduce_max(int v) {
+__declspec(safe) static inline uniform int32 reduce_max(int32 v) {
     // Set values for non-running lanes to the minimum integer value so
     // they don't affect the result.
     return __reduce_max_int32(__mask ? v : INT32_MIN);
@@ -1620,13 +1750,13 @@ __declspec(safe) static inline uniform unsigned int64 reduce_add(unsigned int32 
     return __reduce_add_int32(__mask ? x : 0);
 }
 
-__declspec(safe) static inline uniform unsigned int reduce_min(unsigned int v) {
+__declspec(safe) static inline uniform unsigned int32 reduce_min(unsigned int32 v) {
     // Set values for non-running lanes to the maximum unsigned integer
     // value so they don't affect the result.
     return __reduce_min_uint32(__mask ? v : UINT32_MAX);
 }
 
-__declspec(safe) static inline uniform unsigned int reduce_max(unsigned int v) {
+__declspec(safe) static inline uniform unsigned int32 reduce_max(unsigned int32 v) {
     // Set values for non-running lanes to zero so they don't affect the
     // result.
     return __reduce_max_uint32(__mask ? v : 0);
@@ -1657,7 +1787,8 @@ __declspec(safe) static inline uniform double reduce_max(double v) {
     return result;
 }
 
-__declspec(safe) static inline uniform int64 reduce_add(int64 x) {
+// TODO [zephyr111]: shouldn't the return type bit int128 here (see other overloads)?
+__declspec(safe) static inline uniform int128 reduce_add(int64 x) {
     // Zero out the values for lanes that aren't running
     return __reduce_add_int64(__mask ? x : 0);
 }
@@ -1674,7 +1805,7 @@ __declspec(safe) static inline uniform int64 reduce_max(int64 v) {
     return __reduce_max_int64(__mask ? v : INT64_MIN);
 }
 
-__declspec(safe) static inline uniform unsigned int64 reduce_add(unsigned int64 x) {
+__declspec(safe) static inline uniform unsigned int128 reduce_add(unsigned int64 x) {
     // Set values for non-running lanes to zero so they don't affect the
     // result.
     return __reduce_add_int64(__mask ? x : 0);
@@ -1690,6 +1821,43 @@ __declspec(safe) static inline uniform unsigned int64 reduce_max(unsigned int64 
     // Set values for non-running lanes to zero so they don't affect the
     // result.
     return __reduce_max_uint64(__mask ? v : 0);
+}
+
+// TODO [zephyr111]: is this OK?
+__declspec(safe) static inline uniform int128 reduce_add(int128 x) {
+    // Zero out the values for lanes that aren't running
+    return __reduce_add_int128(__mask ? x : 0);
+}
+
+__declspec(safe) static inline uniform int128 reduce_min(int128 v) {
+    // Set values for non-running lanes to the maximum integer value so
+    // they don't affect the result.
+    return __reduce_min_int128(__mask ? v : INT128_MAX);
+}
+
+__declspec(safe) static inline uniform int128 reduce_max(int128 v) {
+    // Set values for non-running lanes to the minimum integer value so
+    // they don't affect the result.
+    return __reduce_max_int128(__mask ? v : INT128_MIN);
+}
+
+// TODO [zephyr111]: is this OK?
+__declspec(safe) static inline uniform unsigned int128 reduce_add(unsigned int128 x) {
+    // Set values for non-running lanes to zero so they don't affect the
+    // result.
+    return __reduce_add_int128(__mask ? x : 0);
+}
+
+__declspec(safe) static inline uniform unsigned int128 reduce_min(unsigned int128 v) {
+    // Set values for non-running lanes to the maximum unsigned integer
+    // value so they don't affect the result.
+    return __reduce_min_uint128(__mask ? v : UINT128_MAX);
+}
+
+__declspec(safe) static inline uniform unsigned int128 reduce_max(unsigned int128 v) {
+    // Set values for non-running lanes to zero so they don't affect the
+    // result.
+    return __reduce_max_uint128(__mask ? v : 0);
 }
 
 #define REDUCE_EQUAL(TYPE, FUNCTYPE, MASKTYPE)                                                                         \
@@ -1712,6 +1880,8 @@ REDUCE_EQUAL(float, float, IntMaskType)
 REDUCE_EQUAL(int64, int64, IntMaskType)
 REDUCE_EQUAL(unsigned int64, int64, UIntMaskType)
 REDUCE_EQUAL(double, double, IntMaskType)
+REDUCE_EQUAL(int128, int128, IntMaskType)
+REDUCE_EQUAL(unsigned int128, int128, UIntMaskType)
 
 static float16 exclusive_scan_add(float16 v) { return __exclusive_scan_add_half(v, __mask); }
 
@@ -1741,6 +1911,10 @@ static unsigned int64 exclusive_scan_add(unsigned int64 v) { return __exclusive_
 
 static double exclusive_scan_add(double v) { return __exclusive_scan_add_double(v, __mask); }
 
+static int128 exclusive_scan_add(int128 v) { return __exclusive_scan_add_i128(v, (IntMaskType)__mask); }
+
+static unsigned int128 exclusive_scan_add(unsigned int128 v) { return __exclusive_scan_add_i128(v, (UIntMaskType)__mask); }
+
 static int8 exclusive_scan_and(int8 v) { return __exclusive_scan_and_i8(v, (IntMaskType)__mask); }
 
 static unsigned int8 exclusive_scan_and(unsigned int8 v) { return __exclusive_scan_and_i8(v, (UIntMaskType)__mask); }
@@ -1756,6 +1930,10 @@ static unsigned int32 exclusive_scan_and(unsigned int32 v) { return __exclusive_
 static int64 exclusive_scan_and(int64 v) { return __exclusive_scan_and_i64(v, (IntMaskType)__mask); }
 
 static unsigned int64 exclusive_scan_and(unsigned int64 v) { return __exclusive_scan_and_i64(v, (UIntMaskType)__mask); }
+
+static int128 exclusive_scan_and(int128 v) { return __exclusive_scan_and_i128(v, (IntMaskType)__mask); }
+
+static unsigned int128 exclusive_scan_and(unsigned int128 v) { return __exclusive_scan_and_i128(v, (UIntMaskType)__mask); }
 
 static int8 exclusive_scan_or(int8 v) { return __exclusive_scan_or_i8(v, (IntMaskType)__mask); }
 
@@ -1773,22 +1951,26 @@ static int64 exclusive_scan_or(int64 v) { return __exclusive_scan_or_i64(v, (Int
 
 static unsigned int64 exclusive_scan_or(unsigned int64 v) { return __exclusive_scan_or_i64(v, (UIntMaskType)__mask); }
 
+static int128 exclusive_scan_or(int128 v) { return __exclusive_scan_or_i128(v, (IntMaskType)__mask); }
+
+static unsigned int128 exclusive_scan_or(unsigned int128 v) { return __exclusive_scan_or_i128(v, (UIntMaskType)__mask); }
+
 ///////////////////////////////////////////////////////////////////////////
 // packed load, store
 
 /* unsigned int32 implementations. */
 // unsigned int32 load.
-static inline uniform int packed_load_active(uniform unsigned int a[], varying unsigned int *uniform vals) {
+static inline uniform int packed_load_active(uniform unsigned int32 a[], varying unsigned int32 *uniform vals) {
     return __packed_load_activei32((opaque_ptr_t)a, (opaque_ptr_t)vals, (UIntMaskType)__mask);
 }
 
 // unsigned int32 store.
-static inline uniform int packed_store_active(uniform unsigned int a[], unsigned int vals) {
+static inline uniform int packed_store_active(uniform unsigned int32 a[], unsigned int32 vals) {
     return __packed_store_activei32((opaque_ptr_t)a, vals, (UIntMaskType)__mask);
 }
 
 // unsigned int32 store2.
-static inline uniform int packed_store_active2(uniform unsigned int a[], unsigned int vals) {
+static inline uniform int packed_store_active2(uniform unsigned int32 a[], unsigned int32 vals) {
     return __packed_store_active2i32((opaque_ptr_t)a, vals, (UIntMaskType)__mask);
 }
 
@@ -1840,24 +2022,40 @@ static inline uniform int packed_store_active2(uniform unsigned int64 a[], unsig
     return __packed_store_active2i64((opaque_ptr_t)a, vals, (UIntMaskType)__mask);
 }
 
+/* unsigned int128 implementations. */
+// unsigned int128 load.
+static inline uniform int packed_load_active(uniform unsigned int128 a[], varying unsigned int128 *uniform vals) {
+    return __packed_load_activei128((opaque_ptr_t)a, (opaque_ptr_t)vals, (UIntMaskType)__mask);
+}
+
+// unsigned int128 store.
+static inline uniform int packed_store_active(uniform unsigned int128 a[], unsigned int128 vals) {
+    return __packed_store_activei128((opaque_ptr_t)a, vals, (UIntMaskType)__mask);
+}
+
+// unsigned int128 store2.
+static inline uniform int packed_store_active2(uniform unsigned int128 a[], unsigned int128 vals) {
+    return __packed_store_active2i128((opaque_ptr_t)a, vals, (UIntMaskType)__mask);
+}
+
 /* int32 implementations. */
 // int32 load.
-static inline uniform int packed_load_active(uniform int a[], varying int *uniform vals) {
+static inline uniform int packed_load_active(uniform int32 a[], varying int32 *uniform vals) {
     return __packed_load_activei32((opaque_ptr_t)a, (opaque_ptr_t)vals, (IntMaskType)__mask);
 }
 
 // int32 store.
-static inline uniform int packed_store_active(uniform int a[], int vals) {
+static inline uniform int packed_store_active(uniform int32 a[], int32 vals) {
     return __packed_store_activei32((opaque_ptr_t)a, vals, (IntMaskType)__mask);
 }
 
 // int32 store2.
-static inline uniform int packed_store_active2(uniform int a[], int vals) {
+static inline uniform int packed_store_active2(uniform int32 a[], int32 vals) {
     return __packed_store_active2i32((opaque_ptr_t)a, vals, (IntMaskType)__mask);
 }
 
 // int32 store with lanes.
-static inline uniform int packed_store_active(bool active, uniform int a[], int vals) {
+static inline uniform int packed_store_active(bool active, uniform int32 a[], int32 vals) {
     return __packed_store_activei32((opaque_ptr_t)a, vals, (IntMaskType)(-(int)active));
 }
 
@@ -1912,6 +2110,27 @@ static inline uniform int packed_store_active2(uniform int64 a[], int64 vals) {
 // int64 store with lanes.
 static inline uniform int packed_store_active(bool active, uniform int64 a[], int64 vals) {
     return __packed_store_activei64((opaque_ptr_t)a, vals, (IntMaskType)(-(int)active));
+}
+
+/* int128 implementations. */
+// int128 load.
+static inline uniform int packed_load_active(uniform int128 a[], varying int128 *uniform vals) {
+    return __packed_load_activei128((opaque_ptr_t)a, (opaque_ptr_t)vals, (IntMaskType)__mask);
+}
+
+// int128 store.
+static inline uniform int packed_store_active(uniform int128 a[], int128 vals) {
+    return __packed_store_activei128((opaque_ptr_t)a, vals, (IntMaskType)__mask);
+}
+
+// int128 store2.
+static inline uniform int packed_store_active2(uniform int128 a[], int128 vals) {
+    return __packed_store_active2i128((opaque_ptr_t)a, vals, (IntMaskType)__mask);
+}
+
+// int128 store with lanes.
+static inline uniform int packed_store_active(bool active, uniform int128 a[], int128 vals) {
+    return __packed_store_activei128((opaque_ptr_t)a, vals, (IntMaskType)(-(int)active));
 }
 
 /* float16 implementations. */
@@ -1984,11 +2203,11 @@ __declspec(safe, cost1) static inline void streaming_store(uniform float16 a[], 
     __streaming_store_varying_half((opaque_ptr_t)a, vals);
 }
 
-__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int a[], unsigned int vals) {
+__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int32 a[], unsigned int32 vals) {
     __streaming_store_varying_i32((opaque_ptr_t)a, vals);
 }
 
-__declspec(safe, cost1) static inline void streaming_store(uniform int a[], int vals) {
+__declspec(safe, cost1) static inline void streaming_store(uniform int32 a[], int32 vals) {
     __streaming_store_varying_i32((opaque_ptr_t)a, vals);
 }
 
@@ -1998,6 +2217,14 @@ __declspec(safe, cost1) static inline void streaming_store(uniform unsigned int6
 
 __declspec(safe, cost1) static inline void streaming_store(uniform int64 a[], int64 vals) {
     __streaming_store_varying_i64((opaque_ptr_t)a, vals);
+}
+
+__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int128 a[], unsigned int128 vals) {
+    __streaming_store_varying_i128((opaque_ptr_t)a, vals);
+}
+
+__declspec(safe, cost1) static inline void streaming_store(uniform int128 a[], int128 vals) {
+    __streaming_store_varying_i128((opaque_ptr_t)a, vals);
 }
 
 __declspec(safe, cost1) static inline void streaming_store(uniform float a[], float vals) {
@@ -2028,11 +2255,11 @@ __declspec(safe, cost1) static inline void streaming_store(uniform float16 a[], 
     __streaming_store_uniform_half((opaque_ptr_t)a, vals);
 }
 
-__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int a[], uniform unsigned int vals) {
+__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int32 a[], uniform unsigned int32 vals) {
     __streaming_store_uniform_i32((opaque_ptr_t)a, vals);
 }
 
-__declspec(safe, cost1) static inline void streaming_store(uniform int a[], uniform int vals) {
+__declspec(safe, cost1) static inline void streaming_store(uniform int32 a[], uniform int32 vals) {
     __streaming_store_uniform_i32((opaque_ptr_t)a, vals);
 }
 
@@ -2042,6 +2269,14 @@ __declspec(safe, cost1) static inline void streaming_store(uniform unsigned int6
 
 __declspec(safe, cost1) static inline void streaming_store(uniform int64 a[], uniform int64 vals) {
     __streaming_store_uniform_i64((opaque_ptr_t)a, vals);
+}
+
+__declspec(safe, cost1) static inline void streaming_store(uniform unsigned int128 a[], uniform unsigned int128 vals) {
+    __streaming_store_uniform_i128((opaque_ptr_t)a, vals);
+}
+
+__declspec(safe, cost1) static inline void streaming_store(uniform int128 a[], uniform int128 vals) {
+    __streaming_store_uniform_i128((opaque_ptr_t)a, vals);
 }
 
 __declspec(safe, cost1) static inline void streaming_store(uniform float a[], uniform float vals) {
@@ -2095,19 +2330,19 @@ __declspec(safe, cost1) static inline uniform float16 streaming_load_uniform(uni
     return __streaming_load_uniform_half((opaque_ptr_t)a);
 }
 
-__declspec(safe, cost1) static inline varying unsigned int streaming_load(uniform unsigned int a[]) {
-    return (unsigned int)__streaming_load_varying_i32((opaque_ptr_t)a);
+__declspec(safe, cost1) static inline varying unsigned int32 streaming_load(uniform unsigned int32 a[]) {
+    return (unsigned int32)__streaming_load_varying_i32((opaque_ptr_t)a);
 }
 
-__declspec(safe, cost1) static inline varying int streaming_load(uniform int a[]) {
+__declspec(safe, cost1) static inline varying int32 streaming_load(uniform int32 a[]) {
     return __streaming_load_varying_i32((opaque_ptr_t)a);
 }
 
-__declspec(safe, cost1) static inline uniform unsigned int streaming_load_uniform(uniform unsigned int a[]) {
-    return (unsigned int)__streaming_load_uniform_i32((opaque_ptr_t)a);
+__declspec(safe, cost1) static inline uniform unsigned int32 streaming_load_uniform(uniform unsigned int32 a[]) {
+    return (unsigned int32)__streaming_load_uniform_i32((opaque_ptr_t)a);
 }
 
-__declspec(safe, cost1) static inline uniform int streaming_load_uniform(uniform int a[]) {
+__declspec(safe, cost1) static inline uniform int32 streaming_load_uniform(uniform int32 a[]) {
     return __streaming_load_uniform_i32((opaque_ptr_t)a);
 }
 
@@ -2125,6 +2360,22 @@ __declspec(safe, cost1) static inline uniform unsigned int64 streaming_load_unif
 
 __declspec(safe, cost1) static inline uniform int64 streaming_load_uniform(uniform int64 a[]) {
     return __streaming_load_uniform_i64((opaque_ptr_t)a);
+}
+
+__declspec(safe, cost1) static inline varying unsigned int128 streaming_load(uniform unsigned int128 a[]) {
+    return (unsigned int128)__streaming_load_varying_i128((opaque_ptr_t)a);
+}
+
+__declspec(safe, cost1) static inline varying int128 streaming_load(uniform int128 a[]) {
+    return __streaming_load_varying_i128((opaque_ptr_t)a);
+}
+
+__declspec(safe, cost1) static inline uniform unsigned int128 streaming_load_uniform(uniform unsigned int128 a[]) {
+    return (unsigned int128)__streaming_load_uniform_i128((opaque_ptr_t)a);
+}
+
+__declspec(safe, cost1) static inline uniform int128 streaming_load_uniform(uniform int128 a[]) {
+    return __streaming_load_uniform_i128((opaque_ptr_t)a);
 }
 
 __declspec(safe, cost1) static inline varying float streaming_load(uniform float a[]) {
@@ -2207,13 +2458,17 @@ __declspec(safe, cost1) static inline int16 abs(int16 a) { return a > 0 ? a : -a
 
 __declspec(safe, cost1) static inline uniform int16 abs(uniform int16 a) { return a > 0 ? a : -a; }
 
-__declspec(safe, cost1) static inline int abs(int a) { return a > 0 ? a : -a; }
+__declspec(safe, cost1) static inline int32 abs(int32 a) { return a > 0 ? a : -a; }
 
-__declspec(safe, cost1) static inline uniform int abs(uniform int a) { return a > 0 ? a : -a; }
+__declspec(safe, cost1) static inline uniform int32 abs(uniform int32 a) { return a > 0 ? a : -a; }
 
 __declspec(safe, cost1) static inline int64 abs(int64 a) { return a > 0 ? a : -a; }
 
 __declspec(safe, cost1) static inline uniform int64 abs(uniform int64 a) { return a > 0 ? a : -a; }
+
+__declspec(safe, cost1) static inline int128 abs(int128 a) { return a > 0 ? a : -a; }
+
+__declspec(safe, cost1) static inline uniform int128 abs(uniform int128 a) { return a > 0 ? a : -a; }
 
 __declspec(safe, cost1) static inline float16 abs(float16 a) {
     // Floating-point hack: zeroing the high bit clears the sign
@@ -2481,7 +2736,7 @@ __declspec(safe, cost2) static inline float fmod(float x, float y) {
     // Handle special cases: NaN inputs or y == 0.0f
     if (isnan(x) || isnan(y) || y == 0.0f) {
         // Return NaN with the sign of x
-        uniform int nan_bits = 0x7FC00000; // Quiet NaN
+        uniform int32 nan_bits = 0x7FC00000; // Quiet NaN
         if (signbits(x)) {
             nan_bits |= 0x80000000; // Set sign bit if x is negative
         }
@@ -2489,16 +2744,16 @@ __declspec(safe, cost2) static inline float fmod(float x, float y) {
     }
 
     // Handle cases where y is infinite
-    int y_abs_bits = intbits(y) & (int)0x7FFFFFFF; // Absolute value of y bits
-    if (y_abs_bits == 0x7F800000) {                // y is infinite
+    int32 y_abs_bits = intbits(y) & (int32)0x7FFFFFFF; // Absolute value of y bits
+    if (y_abs_bits == 0x7F800000) {                    // y is infinite
         return x;
     }
 
     // Handle cases where x is infinite
-    int x_abs_bits = intbits(x) & (int)0x7FFFFFFF; // Absolute value of x bits
-    if (x_abs_bits == 0x7F800000) {                // x is infinite
+    int32 x_abs_bits = intbits(x) & (int32)0x7FFFFFFF; // Absolute value of x bits
+    if (x_abs_bits == 0x7F800000) {                    // x is infinite
         // Return NaN with the sign of x
-        uniform int nan_bits = 0x7FC00000; // Quiet NaN
+        uniform int32 nan_bits = 0x7FC00000; // Quiet NaN
         if (signbits(x)) {
             nan_bits |= 0x80000000; // Set sign bit if x is negative
         }
@@ -2518,7 +2773,7 @@ __declspec(safe, cost2) static inline uniform float fmod(uniform float x, unifor
     // Handle special cases: NaN inputs or y == 0.0f
     if (isnan(x) || isnan(y) || y == 0.0f) {
         // Return NaN with the sign of x
-        uniform int nan_bits = 0x7FC00000; // Quiet NaN
+        uniform int32 nan_bits = 0x7FC00000; // Quiet NaN
         if (signbits(x)) {
             nan_bits |= 0x80000000; // Set sign bit if x is negative
         }
@@ -2526,16 +2781,16 @@ __declspec(safe, cost2) static inline uniform float fmod(uniform float x, unifor
     }
 
     // Handle cases where y is infinite
-    uniform int y_abs_bits = intbits(y) & (uniform int)0x7FFFFFFF; // Absolute value of y bits
-    if (y_abs_bits == 0x7F800000) {                                // y is infinite
+    uniform int32 y_abs_bits = intbits(y) & (uniform int32)0x7FFFFFFF; // Absolute value of y bits
+    if (y_abs_bits == 0x7F800000) {                                    // y is infinite
         return x;
     }
 
     // Handle cases where x is infinite
-    uniform int x_abs_bits = intbits(x) & (uniform int)0x7FFFFFFF; // Absolute value of x bits
-    if (x_abs_bits == 0x7F800000) {                                // x is infinite
+    uniform int32 x_abs_bits = intbits(x) & (uniform int32)0x7FFFFFFF; // Absolute value of x bits
+    if (x_abs_bits == 0x7F800000) {                                    // x is infinite
         // Return NaN with the sign of x
-        uniform int nan_bits = 0x7FC00000; // Quiet NaN
+        uniform int32 nan_bits = 0x7FC00000; // Quiet NaN
         if (signbits(x)) {
             nan_bits |= 0x80000000; // Set sign bit if x is negative
         }
@@ -2732,31 +2987,31 @@ __declspec(safe, cost1) static inline int16 max(int16 a, int16 b) { return __max
 
 // int32
 
-__declspec(safe, cost1) static inline unsigned int min(unsigned int a, unsigned int b) {
+__declspec(safe, cost1) static inline unsigned int32 min(unsigned int32 a, unsigned int32 b) {
     return __min_varying_uint32(a, b);
 }
 
-__declspec(safe, cost1) static inline uniform unsigned int min(uniform unsigned int a, uniform unsigned int b) {
+__declspec(safe, cost1) static inline uniform unsigned int32 min(uniform unsigned int32 a, uniform unsigned int32 b) {
     return __min_uniform_uint32(a, b);
 }
 
-__declspec(safe, cost1) static inline unsigned int max(unsigned int a, unsigned int b) {
+__declspec(safe, cost1) static inline unsigned int32 max(unsigned int32 a, unsigned int32 b) {
     return __max_varying_uint32(a, b);
 }
 
-__declspec(safe, cost1) static inline uniform unsigned int max(uniform unsigned int a, uniform unsigned int b) {
+__declspec(safe, cost1) static inline uniform unsigned int32 max(uniform unsigned int32 a, uniform unsigned int32 b) {
     return __max_uniform_uint32(a, b);
 }
 
-__declspec(safe, cost1) static inline int min(int a, int b) { return __min_varying_int32(a, b); }
+__declspec(safe, cost1) static inline int32 min(int32 a, int32 b) { return __min_varying_int32(a, b); }
 
-__declspec(safe, cost1) static inline uniform int min(uniform int a, uniform int b) {
+__declspec(safe, cost1) static inline uniform int32 min(uniform int32 a, uniform int32 b) {
     return __min_uniform_int32(a, b);
 }
 
-__declspec(safe, cost1) static inline int max(int a, int b) { return __max_varying_int32(a, b); }
+__declspec(safe, cost1) static inline int32 max(int32 a, int32 b) { return __max_varying_int32(a, b); }
 
-__declspec(safe, cost1) static inline uniform int max(uniform int a, uniform int b) {
+__declspec(safe, cost1) static inline uniform int32 max(uniform int32 a, uniform int32 b) {
     return __max_uniform_int32(a, b);
 }
 
@@ -2788,6 +3043,36 @@ __declspec(safe, cost1) static inline int64 max(int64 a, int64 b) { return __max
 
 __declspec(safe, cost1) static inline uniform int64 max(uniform int64 a, uniform int64 b) {
     return __max_uniform_int64(a, b);
+}
+
+// int128
+
+__declspec(safe, cost1) static inline unsigned int128 min(unsigned int128 a, unsigned int128 b) {
+    return __min_varying_uint128(a, b);
+}
+
+__declspec(safe, cost1) static inline uniform unsigned int128 min(uniform unsigned int128 a, uniform unsigned int128 b) {
+    return __min_uniform_uint128(a, b);
+}
+
+__declspec(safe, cost1) static inline unsigned int128 max(unsigned int128 a, unsigned int128 b) {
+    return __max_varying_uint128(a, b);
+}
+
+__declspec(safe, cost1) static inline uniform unsigned int128 max(uniform unsigned int128 a, uniform unsigned int128 b) {
+    return __max_uniform_uint128(a, b);
+}
+
+__declspec(safe, cost1) static inline int128 min(int128 a, int128 b) { return __min_varying_int128(a, b); }
+
+__declspec(safe, cost1) static inline uniform int128 min(uniform int128 a, uniform int128 b) {
+    return __min_uniform_int128(a, b);
+}
+
+__declspec(safe, cost1) static inline int128 max(int128 a, int128 b) { return __max_varying_int128(a, b); }
+
+__declspec(safe, cost1) static inline uniform int128 max(uniform int128 a, uniform int128 b) {
+    return __max_uniform_int128(a, b);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2856,18 +3141,18 @@ __declspec(safe, cost2) static inline uniform int16 clamp(uniform int16 v, unifo
 
 // int32
 
-__declspec(safe, cost2) static inline unsigned int clamp(unsigned int v, unsigned int low, unsigned int high) {
+__declspec(safe, cost2) static inline unsigned int32 clamp(unsigned int32 v, unsigned int32 low, unsigned int32 high) {
     return min(max(v, low), high);
 }
 
-__declspec(safe, cost2) static inline uniform unsigned int clamp(uniform unsigned int v, uniform unsigned int low,
-                                                                 uniform unsigned int high) {
+__declspec(safe, cost2) static inline uniform unsigned int32 clamp(uniform unsigned int32 v, uniform unsigned int32 low,
+                                                                 uniform unsigned int32 high) {
     return min(max(v, low), high);
 }
 
-__declspec(safe, cost2) static inline int clamp(int v, int low, int high) { return min(max(v, low), high); }
+__declspec(safe, cost2) static inline int32 clamp(int32 v, int32 low, int32 high) { return min(max(v, low), high); }
 
-__declspec(safe, cost2) static inline uniform int clamp(uniform int v, uniform int low, uniform int high) {
+__declspec(safe, cost2) static inline uniform int32 clamp(uniform int32 v, uniform int32 low, uniform int32 high) {
     return min(max(v, low), high);
 }
 
@@ -2888,10 +3173,29 @@ __declspec(safe, cost2) static inline uniform int64 clamp(uniform int64 v, unifo
     return min(max(v, low), high);
 }
 
+// int128
+
+__declspec(safe, cost2) static inline unsigned int128 clamp(unsigned int128 v, unsigned int128 low, unsigned int128 high) {
+    return min(max(v, low), high);
+}
+
+__declspec(safe, cost2) static inline uniform unsigned int128 clamp(uniform unsigned int128 v, uniform unsigned int128 low,
+                                                                   uniform unsigned int128 high) {
+    return min(max(v, low), high);
+}
+
+__declspec(safe, cost2) static inline int128 clamp(int128 v, int128 low, int128 high) { return min(max(v, low), high); }
+
+__declspec(safe, cost2) static inline uniform int128 clamp(uniform int128 v, uniform int128 low, uniform int128 high) {
+    return min(max(v, low), high);
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Global atomics and memory barriers
 
 static inline void memory_barrier() { __memory_barrier(); }
+
+// TODO [zephyr111]: same thing here that for the isph header
 
 #define DEFINE_ATOMIC_OP(TA, TB, OPA, OPB, MASKTYPE, TC)                                                               \
     static inline TA atomic_##OPA##_global(uniform TA *uniform ptr, TA value) {                                        \
@@ -7131,6 +7435,32 @@ static inline varying int64 saturating_add(varying int64 a, varying int64 b) {
     }
 }
 
+static inline uniform int128 saturating_add(uniform int128 a, uniform int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __padds_ui128(a, b);
+    } else {
+        uniform unsigned int128 a_unsig = a, b_unsig = b;
+        uniform unsigned int128 result = a_unsig + b_unsig;
+        a_unsig = (a_unsig >> 63) + INT128_MAX;
+        if ((uniform int128)((a_unsig ^ b_unsig) | ~(b_unsig ^ result)) >= 0)
+            result = a_unsig;
+        return result;
+    }
+}
+
+static inline varying int128 saturating_add(varying int128 a, varying int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __padds_vi128(a, b);
+    } else {
+        varying unsigned int128 a_unsig = a, b_unsig = b;
+        varying unsigned int128 result = a_unsig + b_unsig;
+        a_unsig = (a_unsig >> 63) + INT128_MAX;
+        if ((varying int128)((a_unsig ^ b_unsig) | ~(b_unsig ^ result)) >= 0)
+            result = a_unsig;
+        return result;
+    }
+}
+
 static inline uniform unsigned int8 saturating_add(uniform unsigned int8 a, uniform unsigned int8 b) {
     if (__have_saturating_arithmetic) {
         return __paddus_ui8(a, b);
@@ -7195,6 +7525,26 @@ static inline varying unsigned int64 saturating_add(varying unsigned int64 a, va
     } else {
         varying unsigned int64 result = a + b;
         result |= (-(varying int64)(result < a));
+        return result;
+    }
+}
+
+static inline uniform unsigned int128 saturating_add(uniform unsigned int128 a, uniform unsigned int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __paddus_ui128(a, b);
+    } else {
+        uniform unsigned int128 result = a + b;
+        result |= (-(uniform int128)(result < a));
+        return result;
+    }
+}
+
+static inline varying unsigned int128 saturating_add(varying unsigned int128 a, varying unsigned int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __paddus_vi128(a, b);
+    } else {
+        varying unsigned int128 result = a + b;
+        result |= (-(varying int128)(result < a));
         return result;
     }
 }
@@ -7281,6 +7631,32 @@ static inline varying int64 saturating_sub(varying int64 a, varying int64 b) {
     }
 }
 
+static inline uniform int128 saturating_sub(uniform int128 a, uniform int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __psubs_ui128(a, b);
+    } else {
+        uniform unsigned int128 a_unsig = a, b_unsig = b;
+        uniform unsigned int128 result = a_unsig - b_unsig;
+        a_unsig = (a_unsig >> 63) + INT128_MAX;
+        if ((uniform int128)((a_unsig ^ b_unsig) & (a_unsig ^ result)) < 0)
+            result = a_unsig;
+        return result;
+    }
+}
+
+static inline varying int128 saturating_sub(varying int128 a, varying int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __psubs_vi128(a, b);
+    } else {
+        varying unsigned int128 a_unsig = a, b_unsig = b;
+        varying unsigned int128 result = a_unsig - b_unsig;
+        a_unsig = (a_unsig >> 63) + INT128_MAX;
+        if ((varying int128)((a_unsig ^ b_unsig) & (a_unsig ^ result)) < 0)
+            result = a_unsig;
+        return result;
+    }
+}
+
 static inline uniform unsigned int8 saturating_sub(uniform unsigned int8 a, uniform unsigned int8 b) {
     if (__have_saturating_arithmetic) {
         return __psubus_ui8(a, b);
@@ -7349,6 +7725,26 @@ static inline varying unsigned int64 saturating_sub(varying unsigned int64 a, va
     }
 }
 
+static inline uniform unsigned int128 saturating_sub(uniform unsigned int128 a, uniform unsigned int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __psubus_ui128(a, b);
+    } else {
+        uniform unsigned int128 result = a - b;
+        result &= (-(uniform int128)(result <= a));
+        return result;
+    }
+}
+
+static inline varying unsigned int128 saturating_sub(varying unsigned int128 a, varying unsigned int128 b) {
+    if (__have_saturating_arithmetic) {
+        return __psubus_vi128(a, b);
+    } else {
+        varying unsigned int128 result = a - b;
+        result &= (-(varying int128)(result <= a));
+        return result;
+    }
+}
+
 static inline uniform int8 saturating_div(uniform int8 a, uniform int8 b) {
     /* Only one way to overflow, so test for and prevent it. */
     a += !((b + 1) | ((uniform unsigned int8)a + INT8_MIN));
@@ -7397,6 +7793,18 @@ static inline varying int64 saturating_div(varying int64 a, varying int64 b) {
     return a / b;
 }
 
+static inline uniform int128 saturating_div(uniform int128 a, uniform int128 b) {
+    /* Only one way to overflow, so test for and prevent it. */
+    a += !((b + 1) | ((uniform unsigned int128)a + INT128_MIN));
+    return a / b;
+}
+
+static inline varying int128 saturating_div(varying int128 a, varying int128 b) {
+    /* Only one way to overflow, so test for and prevent it. */
+    a += !((b + 1) | ((varying unsigned int128)a + INT128_MIN));
+    return a / b;
+}
+
 static inline uniform unsigned int8 saturating_div(uniform unsigned int8 a, uniform unsigned int8 b) {
     /* No overflow possible */
     return a / b;
@@ -7433,6 +7841,16 @@ static inline uniform unsigned int64 saturating_div(uniform unsigned int64 a, un
 }
 
 static inline varying unsigned int64 saturating_div(varying unsigned int64 a, varying unsigned int64 b) {
+    /* No overflow possible */
+    return a / b;
+}
+
+static inline uniform unsigned int128 saturating_div(uniform unsigned int128 a, uniform unsigned int128 b) {
+    /* No overflow possible */
+    return a / b;
+}
+
+static inline varying unsigned int128 saturating_div(varying unsigned int128 a, varying unsigned int128 b) {
     /* No overflow possible */
     return a / b;
 }
@@ -7587,136 +8005,162 @@ static inline varying unsigned int32 saturating_mul(varying unsigned int32 a, va
     }
 }
 
-static inline uniform int64 saturating_mul(uniform int64 a, uniform int64 b) {
-    uniform unsigned int64 ret = 0;
-
-    uniform int8 sign = (((a > 0) && (b > 0)) || ((a < 0) && (b < 0))) ? 1 : -1;
-    uniform unsigned int64 a_abs = 0;
-    uniform unsigned int64 b_abs = 0;
-
-    if (a == INT64_MIN)
-        // Operation "-" is undefined for "INT64_MIN", as it causes overflow.
-        // But converting INT64_MIN to unsigned type yields the correct result,
-        // i.e. it will be positive value -INT64_MIN.
-        // See 6.3.1.3 section in C99 standart for more details (ISPC follows
-        // C standard, unless it's specifically different in the language).
-        a_abs = (uniform unsigned int64)INT64_MIN;
-    else
-        a_abs = (a > 0) ? a : -a;
-
-    if (b == INT64_MIN)
-        b_abs = (uniform unsigned int64)INT64_MIN;
-    else
-        b_abs = (b > 0) ? b : -b;
-
-    uniform unsigned int32 a0 = a_abs & 0xFFFFFFFF;
-    uniform unsigned int32 b0 = b_abs & 0xFFFFFFFF;
-    uniform unsigned int32 a1 = a_abs >> 32;
-    uniform unsigned int32 b1 = b_abs >> 32;
-
-    if ((a1 != 0) && (b1 != 0)) {
-        if (sign > 0) {
-            return INT64_MAX;
-        } else {
-            return INT64_MIN;
-        }
-    } else if (a1 != 0) {
-        ret = saturating_add((uniform unsigned int64)saturating_mul(b0, a1) << 32, (uniform unsigned int64)(a0)*b0);
-    } else if (b1 != 0) {
-        ret = saturating_add((uniform unsigned int64)saturating_mul(a0, b1) << 32, (uniform unsigned int64)(a0)*b0);
-    } else {
-        ret = a_abs * b_abs;
-    }
-
-    if ((sign < 0) && (ret >= (uniform unsigned int64)INT64_MIN)) {
-        return INT64_MIN;
-    } else if ((sign > 0) && (ret >= INT64_MAX)) {
-        return INT64_MAX;
-    } else {
-        return ret * sign;
-    }
-}
-
-static inline varying int64 saturating_mul(varying int64 a, varying int64 b) {
-    varying unsigned int64 ret = 0;
-
-    varying int8 sign = (((a > 0) && (b > 0)) || ((a < 0) && (b < 0))) ? 1 : -1;
-    varying unsigned int64 a_abs = 0;
-    varying unsigned int64 b_abs = 0;
-
-    if (a == INT64_MIN)
-        // Operation "-" is undefined for "INT64_MIN", as it causes overflow.
-        // But converting INT64_MIN to unsigned type yields the correct result,
-        // i.e. it will be positive value -INT64_MIN.
-        // See 6.3.1.3 section in C99 standart for more details (ISPC follows
-        // C standard, unless it's specifically different in the language).
-        a_abs = (varying unsigned int64)INT64_MIN;
-    else
-        a_abs = (a > 0) ? a : -a;
-
-    if (b == INT64_MIN)
-        b_abs = (varying unsigned int64)INT64_MIN;
-    else
-        b_abs = (b > 0) ? b : -b;
-
-    varying unsigned int32 a0 = a_abs & 0xFFFFFFFF;
-    varying unsigned int32 b0 = b_abs & 0xFFFFFFFF;
-    varying unsigned int32 a1 = a_abs >> 32;
-    varying unsigned int32 b1 = b_abs >> 32;
-
-    if ((a1 != 0) && (b1 != 0)) {
-        if (sign > 0) {
-            return INT64_MAX;
-        } else {
-            return INT64_MIN;
-        }
-    } else if (a1 != 0) {
-        ret = saturating_add((varying unsigned int64)saturating_mul(b0, a1) << 32, (varying unsigned int64)(a0)*b0);
-    } else if (b1 != 0) {
-        ret = saturating_add((varying unsigned int64)saturating_mul(a0, b1) << 32, (varying unsigned int64)(a0)*b0);
-    } else {
-        ret = a_abs * b_abs;
-    }
-
-    if ((sign < 0) && (ret >= (varying unsigned int64)INT64_MIN)) {
-        return INT64_MIN;
-    } else if ((sign > 0) && (ret >= INT64_MAX)) {
-        return INT64_MAX;
-    } else {
-        return ret * sign;
-    }
-}
+// TODO [zephyr111]: this should be faster (and safer) than the previous implementation, though this must be checked
 
 static inline uniform unsigned int64 saturating_mul(uniform unsigned int64 a, uniform unsigned int64 b) {
+    if (__have_saturating_arithmetic) {
+        return __pmulus_ui64(a, b);
+    } else {
+        uniform unsigned int128 result = (uniform unsigned int128)a * (uniform unsigned int128)b;
+        uniform unsigned int64 hi = result >> 64;
+        uniform unsigned int64 lo = result;
+        return lo | -(uniform int64) !!hi;
+    }
+}
 
-    uniform unsigned int32 a0 = a & 0xFFFFFFFF;
-    uniform unsigned int32 b0 = b & 0xFFFFFFFF;
-    uniform unsigned int32 a1 = a >> 32;
-    uniform unsigned int32 b1 = b >> 32;
+static inline varying unsigned int64 saturating_mul(varying unsigned int64 a, varying unsigned int64 b) {
+    if (__have_saturating_arithmetic) {
+        return __pmulus_vi64(a, b);
+    } else {
+        varying unsigned int128 result = (varying unsigned int128)a * (varying unsigned int128)b;
+        varying unsigned int64 hi = result >> 64;
+        varying unsigned int64 lo = result;
+        return lo | -(varying int64) !!hi;
+    }
+}
+
+// TODO [zephyr111]: check the following implementations (based on the old 64-bit one) VERY carefully!
+
+static inline uniform int128 saturating_mul(uniform int128 a, uniform int128 b) {
+    uniform unsigned int128 ret = 0;
+
+    uniform int8 sign = (((a > 0) && (b > 0)) || ((a < 0) && (b < 0))) ? 1 : -1;
+    uniform unsigned int128 a_abs = 0;
+    uniform unsigned int128 b_abs = 0;
+
+    if (a == INT128_MIN)
+        // Operation "-" is undefined for "INT128_MIN", as it causes overflow.
+        // But converting INT128_MIN to unsigned type yields the correct result,
+        // i.e. it will be positive value -INT128_MIN.
+        // See 6.3.1.3 section in C99 standart for more details (ISPC follows
+        // C standard, unless it's specifically different in the language).
+        a_abs = (uniform unsigned int128)INT128_MIN;
+    else
+        a_abs = (a > 0) ? a : -a;
+
+    if (b == INT128_MIN)
+        b_abs = (uniform unsigned int128)INT128_MIN;
+    else
+        b_abs = (b > 0) ? b : -b;
+
+    uniform unsigned int64 a0 = a_abs & 0xFFFFFFFFFFFFFFFFull;
+    uniform unsigned int64 b0 = b_abs & 0xFFFFFFFFFFFFFFFFull;
+    uniform unsigned int64 a1 = a_abs >> 64ull;
+    uniform unsigned int64 b1 = b_abs >> 64ull;
 
     if ((a1 != 0) && (b1 != 0)) {
-        return UINT64_MAX;
+        if (sign > 0) {
+            return INT128_MAX;
+        } else {
+            return INT128_MIN;
+        }
     } else if (a1 != 0) {
-        return saturating_add((uniform unsigned int64)saturating_mul(b0, a1) << 32, (uniform unsigned int64)(a0)*b0);
+        ret = saturating_add((uniform unsigned int128)saturating_mul(b0, a1) << 64, (uniform unsigned int128)(a0)*b0);
     } else if (b1 != 0) {
-        return saturating_add((uniform unsigned int64)saturating_mul(a0, b1) << 32, (uniform unsigned int64)(a0)*b0);
+        ret = saturating_add((uniform unsigned int128)saturating_mul(a0, b1) << 64, (uniform unsigned int128)(a0)*b0);
+    } else {
+        ret = a_abs * b_abs;
+    }
+
+    if ((sign < 0) && (ret >= (uniform unsigned int128)INT128_MIN)) {
+        return INT128_MIN;
+    } else if ((sign > 0) && (ret >= INT128_MAX)) {
+        return INT128_MAX;
+    } else {
+        return ret * sign;
+    }
+}
+
+static inline varying int128 saturating_mul(varying int128 a, varying int128 b) {
+    varying unsigned int128 ret = 0;
+
+    varying int8 sign = (((a > 0) && (b > 0)) || ((a < 0) && (b < 0))) ? 1 : -1;
+    varying unsigned int128 a_abs = 0;
+    varying unsigned int128 b_abs = 0;
+
+    if (a == INT128_MIN)
+        // Operation "-" is undefined for "INT128_MIN", as it causes overflow.
+        // But converting INT128_MIN to unsigned type yields the correct result,
+        // i.e. it will be positive value -INT128_MIN.
+        // See 6.3.1.3 section in C99 standart for more details (ISPC follows
+        // C standard, unless it's specifically different in the language).
+        a_abs = (varying unsigned int128)INT128_MIN;
+    else
+        a_abs = (a > 0) ? a : -a;
+
+    if (b == INT128_MIN)
+        b_abs = (varying unsigned int128)INT128_MIN;
+    else
+        b_abs = (b > 0) ? b : -b;
+
+    varying unsigned int64 a0 = a_abs & 0xFFFFFFFFFFFFFFFFull;
+    varying unsigned int64 b0 = b_abs & 0xFFFFFFFFFFFFFFFFull;
+    varying unsigned int64 a1 = a_abs >> 64ull;
+    varying unsigned int64 b1 = b_abs >> 64ull;
+
+    if ((a1 != 0) && (b1 != 0)) {
+        if (sign > 0) {
+            return INT128_MAX;
+        } else {
+            return INT128_MIN;
+        }
+    } else if (a1 != 0) {
+        ret = saturating_add((varying unsigned int128)saturating_mul(b0, a1) << 64, (varying unsigned int128)(a0)*b0);
+    } else if (b1 != 0) {
+        ret = saturating_add((varying unsigned int128)saturating_mul(a0, b1) << 64, (varying unsigned int128)(a0)*b0);
+    } else {
+        ret = a_abs * b_abs;
+    }
+
+    if ((sign < 0) && (ret >= (varying unsigned int128)INT128_MIN)) {
+        return INT128_MIN;
+    } else if ((sign > 0) && (ret >= INT128_MAX)) {
+        return INT128_MAX;
+    } else {
+        return ret * sign;
+    }
+}
+
+static inline uniform unsigned int128 saturating_mul(uniform unsigned int128 a, uniform unsigned int128 b) {
+
+    uniform unsigned int64 a0 = a & 0xFFFFFFFFFFFFFFFFllu;
+    uniform unsigned int64 b0 = b & 0xFFFFFFFFFFFFFFFFllu;
+    uniform unsigned int64 a1 = a >> 64llu;
+    uniform unsigned int64 b1 = b >> 64llu;
+
+    if ((a1 != 0) && (b1 != 0)) {
+        return UINT128_MAX;
+    } else if (a1 != 0) {
+        return saturating_add((uniform unsigned int128)saturating_mul(b0, a1) << 64, (uniform unsigned int128)(a0)*b0);
+    } else if (b1 != 0) {
+        return saturating_add((uniform unsigned int128)saturating_mul(a0, b1) << 64, (uniform unsigned int128)(a0)*b0);
     } else {
         return a * b;
     }
 }
 
-static inline varying unsigned int64 saturating_mul(varying unsigned int64 a, varying unsigned int64 b) {
-    varying unsigned int32 a0 = a & 0xFFFFFFFF;
-    varying unsigned int32 b0 = b & 0xFFFFFFFF;
-    varying unsigned int32 a1 = a >> 32;
-    varying unsigned int32 b1 = b >> 32;
+static inline varying unsigned int128 saturating_mul(varying unsigned int128 a, varying unsigned int128 b) {
+    varying unsigned int64 a0 = a & 0xFFFFFFFFFFFFFFFFllu;
+    varying unsigned int64 b0 = b & 0xFFFFFFFFFFFFFFFFllu;
+    varying unsigned int64 a1 = a >> 64llu;
+    varying unsigned int64 b1 = b >> 64llu;
 
     if ((a1 != 0) && (b1 != 0)) {
-        return UINT64_MAX;
+        return UINT128_MAX;
     } else if (a1 != 0) {
-        return saturating_add((varying unsigned int64)saturating_mul(b0, a1) << 32, (varying unsigned int64)(a0)*b0);
+        return saturating_add((varying unsigned int128)saturating_mul(b0, a1) << 64llu, (varying unsigned int128)(a0)*b0);
     } else if (b1 != 0) {
-        return saturating_add((varying unsigned int64)saturating_mul(a0, b1) << 32, (varying unsigned int64)(a0)*b0);
+        return saturating_add((varying unsigned int128)saturating_mul(a0, b1) << 64llu, (varying unsigned int128)(a0)*b0);
     } else {
         return a * b;
     }

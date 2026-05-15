@@ -184,16 +184,19 @@ static const int32 programIndex = {ISPC_PROGRAM_INDEX_INITIALIZER};
 #else
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_64_VAL 0
 #endif
+#define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_128_VAL 0
 #elif defined(ISPC_TARGET_AVX2) && TARGET_WIDTH == 16
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_8_VAL 0
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_16_VAL 0
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_32_VAL 1
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_64_VAL 0
+#define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_128_VAL 0
 #else
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_8_VAL 0
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_16_VAL 0
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_32_VAL 0
 #define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_64_VAL 0
+#define ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_128_VAL 0
 #endif
 
 #if defined(ISPC_TARGET_AVX512SKX) || defined(ISPC_TARGET_AVX512ICL) || defined(ISPC_TARGET_AVX512SPR) ||              \
@@ -210,16 +213,19 @@ static const int32 programIndex = {ISPC_PROGRAM_INDEX_INITIALIZER};
 #else
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_64_VAL 0
 #endif
+#define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_128_VAL 0
 #elif defined(ISPC_TARGET_AVX2) && TARGET_WIDTH == 16
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_8_VAL 0
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_16_VAL 0
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_32_VAL 1
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_64_VAL 0
+#define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_128_VAL 0
 #else
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_8_VAL 0
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_16_VAL 0
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_32_VAL 0
 #define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_64_VAL 0
+#define ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_128_VAL 0
 #endif
 
 // X-Macro for defining target capability constants
@@ -245,14 +251,16 @@ static const int32 programIndex = {ISPC_PROGRAM_INDEX_INITIALIZER};
 // These are not hardware capabilities but compiler/target configuration settings
 #define ISPC_CONFIG_CONSTANTS(MACRO)                                                                                   \
     MACRO(__fast_masked_vload, ISPC_FAST_MASKED_VLOAD_VAL)                                                             \
+    MACRO(__have_rotate_via_shuffle_8, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_8_VAL)                                       \
     MACRO(__have_rotate_via_shuffle_16, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_16_VAL)                                     \
     MACRO(__have_rotate_via_shuffle_32, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_32_VAL)                                     \
     MACRO(__have_rotate_via_shuffle_64, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_64_VAL)                                     \
-    MACRO(__have_rotate_via_shuffle_8, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_8_VAL)                                       \
+    MACRO(__have_rotate_via_shuffle_128, ISPC_TARGET_HAS_ROTATE_VIA_SHUFFLE_128_VAL)                                   \
+    MACRO(__have_shift_via_shuffle_8, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_8_VAL)                                         \
     MACRO(__have_shift_via_shuffle_16, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_16_VAL)                                       \
     MACRO(__have_shift_via_shuffle_32, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_32_VAL)                                       \
     MACRO(__have_shift_via_shuffle_64, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_64_VAL)                                       \
-    MACRO(__have_shift_via_shuffle_8, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_8_VAL)                                         \
+    MACRO(__have_shift_via_shuffle_128, ISPC_TARGET_HAS_SHIFT_VIA_SHUFFLE_128_VAL)                                     \
     MACRO(__is_xe_target, ISPC_IS_XE_TARGET_VAL)                                                                       \
     MACRO(__math_lib, ISPC_MATH_LIB_VAL)                                                                               \
     MACRO(__memory_alignment, ISPC_MEMORY_ALIGNMENT_VAL)
@@ -295,6 +303,7 @@ typedef uniform int8 *uniform opaque_ptr_t;
 #define IntMaskType int64
 #define UIntMaskType unsigned int64
 #else
+// TODO [zephyr111]: should we support 128-bit integers here? Probably not since the size of the gang never exceed 64 in all targets.
 #error Unknown value of ISPC_MASK_BITS
 #endif
 
@@ -309,6 +318,7 @@ typedef uniform int8 *uniform opaque_ptr_t;
 #elif (ISPC_MASK_BITS == 64)
 #define UniformMaskType uniform int64
 #else
+// TODO [zephyr111]: same here
 #error Unknown value of ISPC_MASK_BITS
 #endif
 
@@ -334,6 +344,10 @@ typedef uniform int8 *uniform opaque_ptr_t;
 #ifndef INT64_MAX
 #define INT64_MAX (9223372036854775807LL)
 #endif
+#ifndef INT128_MAX
+// TODO [zephyr111]: add a prefix!
+#define INT128_MAX (170141183460469231731687303715884105727)
+#endif
 #ifndef UINT8_MAX
 #define UINT8_MAX (255U)
 #endif
@@ -346,6 +360,10 @@ typedef uniform int8 *uniform opaque_ptr_t;
 #ifndef UINT64_MAX
 #define UINT64_MAX (18446744073709551615ULL)
 #endif
+#ifndef UINT128_MAX
+// TODO [zephyr111]: add a prefix!
+#define UINT128_MAX (340282366920938463463374607431768211455)
+#endif
 #ifndef INT8_MIN
 #define INT8_MIN (-INT8_MAX - 1)
 #endif
@@ -357,6 +375,10 @@ typedef uniform int8 *uniform opaque_ptr_t;
 #endif
 #ifndef INT64_MIN
 #define INT64_MIN (-INT64_MAX - 1)
+#endif
+#ifndef INT128_MIN
+// TODO [zephyr111]: check this is not computed in 64-bits
+#define INT128_MIN (-INT128_MAX - 1)
 #endif
 #ifndef F16_MIN
 #define F16_MIN (6.103515625e-05F16)
@@ -439,6 +461,7 @@ ISPC_BUILTINS_ATTRS noinline void __pseudo_masked_store_double(ISPC_NOESCAPE var
 // varying int32 __pseudo_gather_i32(varying int32 *, mask)
 // varying float __pseudo_gather_float(varying float *, mask)
 // varying int64 __pseudo_gather_i64(varying int64 *, mask)
+// varying int128 __pseudo_gather_i128(varying int128 *, mask)
 // varying double __pseudo_gather_double(varying double *, mask)
 //
 // However, vectors of pointers weren not legal in LLVM until recently, so
@@ -452,6 +475,7 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int32 __pseudo_gather32_i32(varying in
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying float __pseudo_gather32_float(varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather32_i64(varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double __pseudo_gather32_double(varying int32, UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather32_i128(varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int8 __pseudo_gather64_i8(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int16 __pseudo_gather64_i16(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying float16 __pseudo_gather64_half(varying int64, UIntMaskType);
@@ -459,6 +483,7 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int32 __pseudo_gather64_i32(varying in
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying float __pseudo_gather64_float(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather64_i64(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double __pseudo_gather64_double(varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather64_i128(varying int64, UIntMaskType);
 
 // The ImproveMemoryOps optimization pass finds these calls and then
 // tries to convert them to be calls to gather functions that take a uniform
@@ -470,9 +495,12 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying double __pseudo_gather64_double(varyin
 // constant_offset includes compile-time constant values.  (The scalar loads
 // generated in turn can then take advantage of the free offsetting and scale by
 // 1/2/4/8 that is offered by the x86 addressing modes.)
+// The same logic is applied for 128-bit types though it is certainly not as
+// efficient as for <= 64-bit types on x86 (since the `lea` instruction does 
+// not support it).
 //
-// varying int{8,16,32,float,64,double}
-// __pseudo_gather_factored_base_offsets{32,64}_{i8,i16,i32,float,i64,double}(uniform int8 *base,
+// varying int{8,16,32,float,64,double,128}
+// __pseudo_gather_factored_base_offsets{32,64}_{i8,i16,i32,float,i64,double,i128}(uniform int8 *base,
 //                                    int{32,64} offsets, uniform int32 offset_scale,
 //                                    int{32,64} offset_delta, mask)
 //
@@ -480,8 +508,8 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying double __pseudo_gather64_double(varyin
 // a gather from a uniform base pointer and then "{1/2/4/8} * offsets", where the
 // offsets are int32/64 vectors.
 //
-// varying int{8,16,32,float,64,double}
-// __pseudo_gather_base_offsets{32,64}_{i8,i16,i32,float,i64,double}(uniform int8 *base,
+// varying int{8,16,32,float,64,double,128}
+// __pseudo_gather_base_offsets{32,64}_{i8,i16,i32,float,i64,double,i128}(uniform int8 *base,
 //                                    uniform int32 offset_scale, int{32,64} offsets, mask)
 
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int8 __pseudo_gather_factored_base_offsets32_i8(uniform int8 *uniform,
@@ -501,6 +529,8 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather_factored_base_of
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double
 __pseudo_gather_factored_base_offsets32_double(uniform int8 *uniform, varying int32, uniform int32, varying int32,
                                                UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather_factored_base_offsets32_i128(
+    uniform int8 *uniform, varying int32, uniform int32, varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int8 __pseudo_gather_factored_base_offsets64_i8(uniform int8 *uniform,
                                                                                           varying int64, uniform int32,
                                                                                           varying int64, UIntMaskType);
@@ -518,6 +548,8 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather_factored_base_of
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double
 __pseudo_gather_factored_base_offsets64_double(uniform int8 *uniform, varying int64, uniform int32, varying int64,
                                                UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather_factored_base_offsets64_i128(
+    uniform int8 *uniform, varying int64, uniform int32, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int8 __pseudo_gather_base_offsets32_i8(uniform int8 *uniform, uniform int32,
                                                                                  varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int16 __pseudo_gather_base_offsets32_i16(uniform int8 *uniform, uniform int32,
@@ -533,6 +565,8 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather_base_offsets32_i
                                                                                    varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double
 __pseudo_gather_base_offsets32_double(uniform int8 *uniform, uniform int32, varying int32, UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather_base_offsets32_i128(uniform int8 *uniform, uniform int32,
+                                                                                     varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int8 __pseudo_gather_base_offsets64_i8(uniform int8 *uniform, uniform int32,
                                                                                  varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying int16 __pseudo_gather_base_offsets64_i16(uniform int8 *uniform, uniform int32,
@@ -548,6 +582,8 @@ ISPC_BUILTINS_ATTRS ISPC_READONLY varying int64 __pseudo_gather_base_offsets64_i
                                                                                    varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS ISPC_READONLY varying double
 __pseudo_gather_base_offsets64_double(uniform int8 *uniform, uniform int32, varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS ISPC_READONLY varying int128 __pseudo_gather_base_offsets64_i128(uniform int8 *uniform, uniform int32,
+                                                                                     varying int64, UIntMaskType);
 
 // Similarly to the pseudo-gathers defined above, we also declare undefined
 // pseudo-scatter instructions with signatures:
@@ -559,6 +595,7 @@ __pseudo_gather_base_offsets64_double(uniform int8 *uniform, uniform int32, vary
 // void __pseudo_scatter_float(varying float *, varying float values, mask)
 // void __pseudo_scatter_i64(varying int64 *, varying int64 values, mask)
 // void __pseudo_scatter_double(varying double *, varying double values, mask)
+// void __pseudo_scatter_i128(varying int128 *, varying int128 values, mask)
 
 ISPC_BUILTINS_ATTRS void __pseudo_scatter32_i8(varying int32, varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter32_i16(varying int32, varying int16, UIntMaskType);
@@ -567,6 +604,7 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter32_i32(varying int32, varying int32, UI
 ISPC_BUILTINS_ATTRS void __pseudo_scatter32_float(varying int32, varying float, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter32_i64(varying int32, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter32_double(varying int32, varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter32_i128(varying int32, varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_i8(varying int64, varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_i16(varying int64, varying int16, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_half(varying int64, varying float16, UIntMaskType);
@@ -574,6 +612,7 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter64_i32(varying int64, varying int32, UI
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_float(varying int64, varying float, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_i64(varying int64, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter64_double(varying int64, varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter64_i128(varying int64, varying int128, UIntMaskType);
 
 // And the ImproveMemoryOps optimization pass also finds these and
 // either transforms them to scatters like:
@@ -581,14 +620,14 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter64_double(varying int64, varying double
 // void __pseudo_scatter_factored_base_offsets{32,64}_i8(uniform int8 *base,
 //             varying int32 offsets, uniform int32 offset_scale,
 //             varying int{32,64} offset_delta, varying int8 values, mask)
-// (and similarly for 16/32/64 bit values)
+// (and similarly for 16/32/64/128 bit values)
 //
 // Or, if the target has a native scatter instruction:
 //
 // void __pseudo_scatter_base_offsets{32,64}_i8(uniform int8 *base,
 //             uniform int32 offset_scale, varying int{32,64} offsets,
 //             varying int8 values, mask)
-// (and similarly for 16/32/64 bit values)
+// (and similarly for 16/32/64/128 bit values)
 
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets32_i8(ISPC_NOESCAPE uniform int8 *uniform, varying int32,
                                                                      uniform int32, varying int32, varying int8,
@@ -611,6 +650,9 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets32_i64(ISPC_NOESC
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets32_double(ISPC_NOESCAPE uniform int8 *uniform,
                                                                          varying int32, uniform int32, varying int32,
                                                                          varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets32_i128(ISPC_NOESCAPE uniform int8 *uniform,
+                                                                      varying int32, uniform int32, varying int32,
+                                                                      varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets64_i8(ISPC_NOESCAPE uniform int8 *uniform, varying int64,
                                                                      uniform int32, varying int64, varying int8,
                                                                      UIntMaskType);
@@ -632,6 +674,9 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets64_i64(ISPC_NOESC
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets64_double(ISPC_NOESCAPE uniform int8 *uniform,
                                                                          varying int64, uniform int32, varying int64,
                                                                          varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter_factored_base_offsets64_i128(ISPC_NOESCAPE uniform int8 *uniform,
+                                                                      varying int64, uniform int32, varying int64,
+                                                                      varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets32_i8(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
                                                             varying int32, varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets32_i16(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
@@ -646,6 +691,8 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets32_i64(ISPC_NOESCAPE unifo
                                                              varying int32, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets32_double(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
                                                                 varying int32, varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets32_i128(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
+                                                             varying int32, varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets64_i8(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
                                                             varying int64, varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets64_i16(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
@@ -660,6 +707,8 @@ ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets64_i64(ISPC_NOESCAPE unifo
                                                              varying int64, varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets64_double(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
                                                                 varying int64, varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS void __pseudo_scatter_base_offsets64_i128(ISPC_NOESCAPE uniform int8 *uniform, uniform int32,
+                                                             varying int64, varying int128, UIntMaskType);
 
 ISPC_BUILTINS_ATTRS void __pseudo_prefetch_read_varying_1(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __pseudo_prefetch_read_varying_1_native(uniform int8 *uniform, uniform int32, varying int32,
@@ -690,12 +739,13 @@ ISPC_BUILTINS_ATTRS inline varying int32 __masked_load_i32(varying int32 *unifor
 ISPC_BUILTINS_ATTRS inline varying float __masked_load_float(varying float *uniform, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline varying int64 __masked_load_i64(varying int64 *uniform, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline varying double __masked_load_double(varying double *uniform, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline varying int128 __masked_load_i128(varying int128 *uniform, UIntMaskType);
 
 ISPC_BUILTINS_ATTRS inline void __masked_store_i8(ISPC_NOESCAPE varying int8 *uniform, varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_i16(ISPC_NOESCAPE varying int16 *uniform, varying int16, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_i32(ISPC_NOESCAPE varying int32 *uniform, varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_i64(ISPC_NOESCAPE varying int64 *uniform, varying int64, UIntMaskType);
-ISPC_BUILTINS_ATTRS inline void __masked_store_i128(ISPC_NOESCAPE varying int64 *uniform, varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __masked_store_i128(ISPC_NOESCAPE varying int128 *uniform, varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_float(ISPC_NOESCAPE varying float *uniform, varying float, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __masked_store_double(ISPC_NOESCAPE varying double *uniform, varying double,
                                                       UIntMaskType);
@@ -810,6 +860,18 @@ ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying double
 __gather_base_offsets32_double(uniform int8 *uniform, uniform int32, varying int32, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying double
 __gather_base_offsets64_double(uniform int8 *uniform, uniform int32, varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128
+__gather_factored_base_offsets32_i128(uniform int8 *uniform, varying int32, uniform int32, varying int32, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128
+__gather_factored_base_offsets64_i128(uniform int8 *uniform, varying int64, uniform int32, varying int64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather32_generic_i128(varying uint32, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather64_generic_i128(varying uint64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather32_i128(varying uint32, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather64_i128(varying uint64, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather_base_offsets32_i128(uniform int8 *uniform, uniform int32,
+                                                                                   varying int32, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline ISPC_READONLY varying int128 __gather_base_offsets64_i128(uniform int8 *uniform, uniform int32,
+                                                                                   varying int64, UIntMaskType);
 
 ISPC_BUILTINS_ATTRS inline void __scatter_factored_base_offsets32_i8(uniform int8 *uniform, varying int32,
                                                                      uniform int32, varying int32, varying int8,
@@ -881,6 +943,16 @@ ISPC_BUILTINS_ATTRS inline void __scatter32_generic_double(varying uint32, varyi
 ISPC_BUILTINS_ATTRS inline void __scatter64_generic_double(varying uint64, varying double, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __scatter32_double(varying uint32, varying double, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __scatter64_double(varying uint64, varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter_factored_base_offsets32_i128(uniform int8 *uniform, varying int32,
+                                                                      uniform int32, varying int32, varying int128,
+                                                                      UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter_factored_base_offsets64_i128(uniform int8 *uniform, varying int64,
+                                                                      uniform int32, varying int64, varying int128,
+                                                                      UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter32_generic_i128(varying uint32, varying int128, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter64_generic_i128(varying uint64, varying int128, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter32_i128(varying uint32, varying int128, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter64_i128(varying uint64, varying int128, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets32_i8(uniform int8 *uniform, uniform int32, varying int32,
                                                             varying int8, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets64_i8(uniform int8 *uniform, uniform int32, varying int64,
@@ -909,6 +981,10 @@ ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets32_double(uniform int8 *un
                                                                 varying double, UIntMaskType);
 ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets64_double(uniform int8 *uniform, uniform int32, varying int64,
                                                                 varying double, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets32_i128(uniform int8 *uniform, uniform int32, varying int32,
+                                                             varying int128, UIntMaskType);
+ISPC_BUILTINS_ATTRS inline void __scatter_base_offsets64_i128(uniform int8 *uniform, uniform int32, varying int64,
+                                                             varying int128, UIntMaskType);
 
 ISPC_BUILTINS_ATTRS void __prefetch_read_varying_1(varying int64, UIntMaskType);
 ISPC_BUILTINS_ATTRS void __prefetch_read_varying_2(varying int64, UIntMaskType);
@@ -976,15 +1052,21 @@ ISPC_BUILTINS_ATTRS void __do_assert_uniform(uniform int8 *uniform, uniform bool
 ISPC_BUILTINS_ATTRS void __do_assert_varying(uniform int8 *uniform, UIntMaskType, UIntMaskType);
 #endif // ISPC_TARGET_XE
 
+// TODO [zephyr111]: see the related note in `generic.ispc`
 ISPC_BUILTINS_ATTRS uniform int32 __count_leading_zeros_uniform_i32(uniform int32);
 ISPC_BUILTINS_ATTRS uniform int64 __count_leading_zeros_uniform_i64(uniform int64);
+ISPC_BUILTINS_ATTRS uniform int32 __count_leading_zeros_uniform_i128(uniform int128);
 ISPC_BUILTINS_ATTRS uniform int32 __count_trailing_zeros_uniform_i32(uniform int32);
 ISPC_BUILTINS_ATTRS uniform int64 __count_trailing_zeros_uniform_i64(uniform int64);
+ISPC_BUILTINS_ATTRS uniform int32 __count_trailing_zeros_uniform_i128(uniform int128);
 
+// TODO [zephyr111]: see the related note in `generic.ispc`
 ISPC_BUILTINS_ATTRS varying int32 __count_leading_zeros_varying_i32(varying int32);
 ISPC_BUILTINS_ATTRS varying int64 __count_leading_zeros_varying_i64(varying int64);
+ISPC_BUILTINS_ATTRS varying int32 __count_leading_zeros_varying_i128(varying int128);
 ISPC_BUILTINS_ATTRS varying int32 __count_trailing_zeros_varying_i32(varying int32);
 ISPC_BUILTINS_ATTRS varying int64 __count_trailing_zeros_varying_i64(varying int64);
+ISPC_BUILTINS_ATTRS varying int32 __count_trailing_zeros_varying_i128(varying int128);
 
 ISPC_BUILTINS_ATTRS uniform int64 __movmsk(UIntMaskType);
 ISPC_BUILTINS_ATTRS uniform bool __any(UIntMaskType);
@@ -1007,19 +1089,23 @@ ISPC_BUILTINS_ATTRS_MASKED int8 __sdiv_i8(int8 a, int8 b);
 ISPC_BUILTINS_ATTRS_MASKED int16 __sdiv_i16(int16 a, int16 b);
 ISPC_BUILTINS_ATTRS_MASKED int32 __sdiv_i32(int32 a, int32 b);
 ISPC_BUILTINS_ATTRS_MASKED int64 __sdiv_i64(int64 a, int64 b);
+ISPC_BUILTINS_ATTRS_MASKED int128 __sdiv_i128(int128 a, int128 b);
 ISPC_BUILTINS_ATTRS_MASKED uint8 __udiv_i8(uint8 a, uint8 b);
 ISPC_BUILTINS_ATTRS_MASKED uint16 __udiv_i16(uint16 a, uint16 b);
 ISPC_BUILTINS_ATTRS_MASKED uint32 __udiv_i32(uint32 a, uint32 b);
 ISPC_BUILTINS_ATTRS_MASKED uint64 __udiv_i64(uint64 a, uint64 b);
+ISPC_BUILTINS_ATTRS_MASKED uint128 __udiv_i128(uint128 a, uint128 b);
 
 ISPC_BUILTINS_ATTRS_MASKED int8 __srem_i8(int8 a, int8 b);
 ISPC_BUILTINS_ATTRS_MASKED int16 __srem_i16(int16 a, int16 b);
 ISPC_BUILTINS_ATTRS_MASKED int32 __srem_i32(int32 a, int32 b);
 ISPC_BUILTINS_ATTRS_MASKED int64 __srem_i64(int64 a, int64 b);
+ISPC_BUILTINS_ATTRS_MASKED int128 __srem_i128(int128 a, int128 b);
 ISPC_BUILTINS_ATTRS_MASKED uint8 __urem_i8(uint8 a, uint8 b);
 ISPC_BUILTINS_ATTRS_MASKED uint16 __urem_i16(uint16 a, uint16 b);
 ISPC_BUILTINS_ATTRS_MASKED uint32 __urem_i32(uint32 a, uint32 b);
 ISPC_BUILTINS_ATTRS_MASKED uint64 __urem_i64(uint64 a, uint64 b);
+ISPC_BUILTINS_ATTRS_MASKED uint128 __urem_i128(uint128 a, uint128 b);
 
 #ifdef ISPC_TARGET_XE
 ISPC_BUILTINS_ATTRS inline ISPC_READNONE uniform int32 __task_index0();
