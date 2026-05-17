@@ -18,7 +18,7 @@ syn keyword	ispcStatement		assert assume cbreak ccontinue creturn delete launch 
 syn keyword	ispcConditional		cif
 syn keyword	ispcRepeat		cdo cfor cwhile foreach foreach_tiled foreach_unique foreach_active
 syn keyword	ispcBuiltin		programCount programIndex taskCount taskCount0 taskCount1 taskCount3 taskIndex taskIndex0 taskIndex1 taskIndex2
-syn keyword	ispcType		export uniform varying int8 int16 int32 int64 uint8 uint16 uint32 uint64 float16
+syn keyword	ispcType		export uniform varying int8 int16 int32 int64 int128 uint8 uint16 uint32 uint64 uint128 float16
 syn keyword	ispcOperator		operator in
 syn keyword	ispcStorageClass	noinline __vectorcall __regcall
 syn keyword	ispcTemplates		template typename
@@ -27,8 +27,9 @@ syn keyword	ispcDefine		ISPC ISPC_POINTER_SIZE ISPC_MAJOR_VERSION ISPC_MINOR_VER
 					\ TARGET_ELEMENT_WIDTH ISPC_UINT_IS_DEFINED ISPC_LLVM_INTRINSICS_ENABLED
                                         \ ISPC_TARGET_HAS_FP16_SUPPORT ISPC_TARGET_HAS_FP64_SUPPORT
                                         \ ISPC_ATTRIBUTE_SUPPORTED
-                                        \ INT8_MIN INT16_MIN INT32_MIN INT64_MIN INT8_MAX INT16_MAX INT32_MAX INT64_MAX
-                                        \ UINT8_MAX UINT16_MAX UINT32_MAX UINT64_MAX
+                                        \ INT8_MIN INT16_MIN INT32_MIN INT64_MIN INT128_MIN
+                                        \ INT8_MAX INT16_MAX INT32_MAX INT64_MAX INT128_MAX
+                                        \ UINT8_MAX UINT16_MAX UINT32_MAX UINT64_MAX UINT128_MAX
                                         \ F16_MIN FLT_MIN DBL_MIN F16_MAX FLT_MAX DBL_MAX
 					\ ISPC_TARGET_NEON ISPC_TARGET_SSE2 ISPC_TARGET_SSE4 ISPC_TARGET_AVX ISPC_TARGET_AVX2 ISPC_TARGET_AVX512KNL ISPC_TARGET_AVX512SKX
 					\ ISPC_TARGET_AVX512SPR ISPC_TARGET_AVX512GNR ISPC_TARGET_AVX10_2DMR
