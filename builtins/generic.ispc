@@ -420,7 +420,7 @@ EXT READNONE varying float16 __tan_varying_half(varying float16) { __not_support
 
 // saturating math functions
 // m_hasSaturatingArithmetic
-// TODO [zephyr111]: should __abs_[uv]i128 be implemented?
+// TODO [zephyr111]: is this still actually useful? it does not seems to be called anywhere!
 EXT uniform int64 __abs_ui64(uniform int64) { __not_supported(); }
 EXT varying int64 __abs_vi64(varying int64) { __not_supported(); }
 EXT uniform int8 __padds_ui8(uniform int8 x, uniform int8 y) { return @llvm.sadd.sat(x, y); }

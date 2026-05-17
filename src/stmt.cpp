@@ -3528,9 +3528,10 @@ PrintStmt::PrintStmt(const std::string &f, Expr *v, SourcePos p) : Stmt(p, Print
    void *s (and because ispc print() formatting strings statements don't
    encode types), we pass along a string to __do_print() where the i'th
    character encodes the type of the i'th value to be printed. The encoding
-   is defined by getEncoding4Uniform<T> and getEncding4Varying<T> functions.
+   is defined by getEncoding4Uniform<T> and getEncoding4Varying<T> functions.
  */
 static char lEncodeType(const Type *t) {
+    // TODO [zephyr111]: is this also actually used for extern C functions or anything requiring a stable ABI?
     if (Type::Equal(t, AtomicType::UniformBool)) {
         return PrintInfo::getEncoding4Uniform<bool>();
     }
@@ -3568,23 +3569,15 @@ static char lEncodeType(const Type *t) {
         return PrintInfo::getEncoding4Varying<unsigned long long>();
     }
     if (Type::Equal(t, AtomicType::UniformInt128)) {
-        // TODO [zephyr111]: not supported yet
-        //Assert(false);
         return PrintInfo::getEncoding4Uniform<int128_t>();
     }
     if (Type::Equal(t, AtomicType::VaryingInt128)) {
-        // TODO [zephyr111]: not supported yet
-        //Assert(false);
         return PrintInfo::getEncoding4Varying<int128_t>();
     }
     if (Type::Equal(t, AtomicType::UniformUInt128)) {
-        // TODO [zephyr111]: not supported yet
-        //Assert(false);
         return PrintInfo::getEncoding4Uniform<uint128_t>();
     }
     if (Type::Equal(t, AtomicType::VaryingUInt128)) {
-        // TODO [zephyr111]: not supported yet
-        //Assert(false);
         return PrintInfo::getEncoding4Varying<uint128_t>();
     }
     if (Type::Equal(t, AtomicType::UniformDouble)) {

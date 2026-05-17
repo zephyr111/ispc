@@ -627,7 +627,7 @@ lParseInteger(bool dotdotdot) {
         yylval.intVal *= 1024*1024*1024;
 
     // TODO [zephyr111]: should we support a "lll" suffix?
-    //                   maybe another like i128, similar to what Rust does?
+    //                   maybe another like "i128", similar to what Rust does?
     if (dotdotdot) {
         if (ls >= 2)
             return us ? TOKEN_UINT64DOTDOTDOT_CONSTANT : TOKEN_INT64DOTDOTDOT_CONSTANT;
@@ -778,7 +778,6 @@ static void lPragmaUnroll(YYSTYPE *yylval, SourcePos *pos, std::string fromUserR
         ++pos->last_column;
     }
 
-    // TODO [zephyr111]: FIXME: same thing here: support reading 128-bit integers?
     char *endPtr = nullptr;
 #if defined(ISPC_HOST_IS_WINDOWS) && !defined(__MINGW32__)
     count = _strtoui64(currChar, &endPtr, 0);

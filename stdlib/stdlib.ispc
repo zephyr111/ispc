@@ -1787,7 +1787,7 @@ __declspec(safe) static inline uniform double reduce_max(double v) {
     return result;
 }
 
-// TODO [zephyr111]: shouldn't the return type bit int128 here (see other overloads)?
+// TODO [zephyr111]: shouldn't the return type be int128 here (see other overloads)?
 __declspec(safe) static inline uniform int128 reduce_add(int64 x) {
     // Zero out the values for lanes that aren't running
     return __reduce_add_int64(__mask ? x : 0);
