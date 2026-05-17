@@ -281,6 +281,7 @@ New Architecture Support:
   added to the standard library.
 * The hyperbolic functions ``sinh``, ``cosh`` and ``tanh`` have also been added
   to the standard library.
+* There are new 128-bit integer types: ``int128`` and  ``uint128``.
 
 Updating ISPC Programs For Changes In ISPC 1.30.0
 -------------------------------------------------
@@ -1528,13 +1529,13 @@ preprocessor runs:
   * - ISPC_LLVM_INTRINSICS_ENABLED
     - 1
     - The macro is defined if LLVM intrinsics support is enabled
-  * - INT8_MIN, INT16_MIN, INT32_MIN, INT64_MIN
+  * - INT8_MIN, INT16_MIN, INT32_MIN, INT64_MIN, INT128_MIN
     -
     - Minimum value of signed integer types of the corresponding size
-  * - INT8_MAX, INT16_MAX, INT32_MAX, INT64_MAX
+  * - INT8_MAX, INT16_MAX, INT32_MAX, INT64_MAX, INT128_MAX
     -
     - Maximum value of signed integer types of the corresponding size
-  * - UINT8_MAX, UINT16_MAX, UINT32_MAX, UINT64_MAX
+  * - UINT8_MAX, UINT16_MAX, UINT32_MAX, UINT64_MAX, UINT128_MAX
     -
     - Maximum value of unsigned integer types of the corresponding size
   * - F16_MIN, FLT_MIN, DBL_MIN
@@ -1585,6 +1586,12 @@ To illustrate, consider the following example:
         EPRINT("Hello, World!\n");
     }
 
+Please note that while ISPC supports 128-bit integers, the C preprocessor does
+not support it yet (mainly because the C23 standard does not require this
+despite the new ``_BitInt(N)`` integer type).
+This means the substitution of macro containing 128-bit integers works well,
+but not 128-bit arithmetic operations (e.g. 128-bit comparisons, 128-bit
+additions, etc.) in preprocessor conditionals.
 
 Pragma Directives
 -----------------
@@ -2689,8 +2696,8 @@ There are a number of features of C89 that are not supported in ``ispc``
 but are likely to be supported in future releases:
 
 * There are no types named ``char``, ``short``, or ``long`` (or ``long
-  double``).  However, there are built-in ``int8``, ``int16``, and
-  ``int64`` types
+  double``). However, there are built-in ``int8``, ``int16``, ``int32``,
+  ``int64`` and ``int128`` types
 * Character constants
 * String constants and arrays of characters as strings
 * ``goto`` statements are partially supported (see `Unstructured Control Flow: "goto"`_)
@@ -2722,10 +2729,11 @@ The following reserved words from C89 are also reserved in ``ispc``:
 ``bool``, ``cdo``, ``cfor``, ``cif``, ``cwhile``, ``delete``, ``export``,
 ``false``, ``float16``, ``foreach``, ``foreach_active``, ``foreach_tiled``,
 ``foreach_unique``, ``in``, ``inline``, ``int8``, ``int16``, ``int32``,
-``int64``, ``invoke_sycl``, ``launch``, ``new``, ``noinline``, ``print``,
-``soa``, ``sync``, ``task``, ``template``, ``true``, ``typename``, ``uint8``,
-``uint16``, ``uint32``, ``uint64``, ``uint``, ``uniform``, ``unmasked``,
-``varying``, ``__attribute__``, ``__regcall``, ``__vectorcall``.
+``int64``, ``int128``, ``invoke_sycl``, ``launch``, ``new``, ``noinline``,
+``print``, ``soa``, ``sync``, ``task``, ``template``, ``true``, ``typename``,
+``uint8``, ``uint16``, ``uint32``, ``uint64``, ``uint128``, ``uint``,
+``uniform``, ``unmasked``, ``varying``, ``__attribute__``, ``__regcall``,
+``__vectorcall``.
 
 
 Lexical Structure
@@ -2892,12 +2900,12 @@ The following identifiers are reserved as language keywords: ``bool``,
 ``export``, ``extern``, ``false``, ``float16``, ``float``, ``for``,
 ``foreach``, ``foreach_active``, ``foreach_tiled``, ``foreach_unique``,
 ``goto``, ``if``, ``in``, ``inline``, ``int8``, ``int16``, ``int32``,
-``int64``, ``int``, ``invoke_sycl``, ``launch``, ``new``, ``noinline``,
-``NULL``, ``print``, ``return``, ``signed``, ``sizeof``, ``soa``, ``static``,
-``struct``, ``switch``, ``sync``, ``task``, ``template``, ``true``,
+``int64``, ``int128``, ``int``, ``invoke_sycl``, ``launch``, ``new``,
+``noinline``, ``NULL``, ``print``, ``return``, ``signed``, ``sizeof``, ``soa``,
+``static``, ``struct``, ``switch``, ``sync``, ``task``, ``template``, ``true``,
 ``typedef``, ``typename``, ``uint8``, ``uint16``, ``uint32``, ``uint64``,
-``uint``, ``uniform``, ``unmasked``, ``unsigned``, ``varying``, ``void``,
-``while``, ``__attribute__``, ``__regcall``, ``__vectorcall``.
+``uint128``, ``uint``, ``uniform``, ``unmasked``, ``unsigned``, ``varying``,
+``void``, ``while``, ``__attribute__``, ``__regcall``, ``__vectorcall``.
 
 ``ispc`` defines the following operators and punctuation:
 
@@ -2960,6 +2968,8 @@ basic types:
   ``unsigned int32``, ``uint32`` or ``uint``.
 * ``int64``: 64-bit signed integer.
 * ``unsigned int64``: 64-bit unsigned integer; may also be specified as ``uint64``.
+* ``int128``: 128-bit signed integer.
+* ``unsigned int128``: 128-bit unsigned integer; may also be specified as ``uint128``.
 * ``float16``: 16-bit floating point value
 * ``float``: 32-bit floating point value
 * ``double``: 64-bit double-precision floating point value.
@@ -2979,9 +2989,11 @@ can be assigned to a variable of ``int`` type directly.  In binary
 arithmetic expressions with mixed types, types are promoted to the "more
 general" of the two types, with the following precedence:
 
+TODO [zephyr111]: is this still+now valid for double-precision?
+
 ::
 
-  double > uint64 > int64 > float > uint32 > int32 >
+  double > uint128 > int128 > uint64 > int64 > float > uint32 > int32 >
       float16 > uint16 > int16 > uint8 > int8 > bool
 
 In other words, adding an ``int64`` to a ``double`` causes the ``int64`` to
@@ -3091,10 +3103,10 @@ The ``typedef`` keyword can be used to name types:
 
 ::
 
-    typedef int64 BigInt;
+    typedef int128 BigInt;
     typedef float Float3[3];
 
-Following C's syntax, the code above defines ``BigInt`` to have ``int64``
+Following C's syntax, the code above defines ``BigInt`` to have ``int128``
 type and ``Float3`` to have ``float[3]`` type.
 
 Also as in C, ``typedef`` doesn't create a new type: it just provides an
@@ -5291,8 +5303,9 @@ otherwise ``f``. These are the variants of ``select()`` for the ``int8`` type:
     int8 select(uniform bool cond, int8 t, int8 f)
     uniform int8 select(uniform bool cond, uniform int8 t, uniform int8 f)
 
-There are also variants for ``int16``, ``int32``, ``int64``, ``uint8``,
-``uint16``, ``uint32``, ``uint64``, ``float``, ``float16`` and ``double`` types.
+There are also variants for ``int16``, ``int32``, ``int64``, ``int128``,
+``uint8``, ``uint16``, ``uint32``, ``uint64``, ``uint128``, ``float``,
+``float16`` and ``double`` types.
 Uniform short vector types are also supported with the basic types listed above:
 
 ::
@@ -5311,15 +5324,19 @@ number of bits set in the given value.
 
 ::
 
-    uniform int popcnt(uniform int v)
-    int popcnt(int v)
-    uniform int popcnt(bool v)
+    uniform int32 popcnt(uniform int32 v)
+    int32 popcnt(int32 v)
+    uniform int64 popcnt(uniform int64 v)
+    int64 popcnt(int64 v)
+    uniform int128 popcnt(uniform int128 v)
+    int128 popcnt(int128 v)
+    uniform int32 popcnt(bool v)
 
 
 A few functions determine how many leading bits in the given value are zero
 and how many of the trailing bits are zero; there are also ``unsigned``
-variants of these functions and variants that take ``int64`` and ``unsigned
-int64`` types.
+variants of these functions and variants that take ``int64``, ``unsigned
+int64``, ``int128`` and ``unsigned int128`` types.
 
 ::
 
@@ -5433,16 +5450,18 @@ is on (i.e. the value is negative) and zero if it is off.
     double abs(double a)
     int8 abs(int8 a)
     int16 abs(int16 a)
-    int abs(int a)
+    int32 abs(int32 a)
     int64 abs(int64 a)
+    int128 abs(int128 a)
 
     uniform float16 abs(uniform float16 a)
     uniform float abs(uniform float a)
     uniform double abs(uniform double a)
     uniform int8 abs(uniform int8 a)
     uniform int16 abs(uniform int16 a)
-    uniform int abs(uniform int a)
+    uniform int32 abs(uniform int32 a)
     uniform int64 abs(uniform int64 a)
+    uniform int128 abs(uniform int128 a)
 
 ::
 
@@ -5573,10 +5592,12 @@ standard types.  These functions also map to corresponding intrinsic functions.
     int8 min(int8 a, int8 b);
     unsigned int16 min(unsigned int16 a, unsigned int16 b);
     int16 min(int16 a, int16 b);
-    unsigned int min(unsigned int a, unsigned int b);
-    int min(int a, int b);
+    unsigned int32 min(unsigned int32 a, unsigned int32 b);
+    int32 min(int32 a, int32 b);
     unsigned int64 min(unsigned int64 a, unsigned int64 b);
     int64 min(int64 a, int64 b);
+    unsigned int128 min(unsigned int128 a, unsigned int128 b);
+    int128 min(int128 a, int128 b);
 
     uniform float16 min(uniform float16 a, uniform float16 b);
     uniform float min(uniform float a, uniform float b)
@@ -5585,10 +5606,12 @@ standard types.  These functions also map to corresponding intrinsic functions.
     uniform int8 min(uniform int8 a, uniform int8 b);
     uniform unsigned int16 min(uniform unsigned int16 a, uniform unsigned int16 b);
     uniform int16 min(uniform int16 a, uniform int16 b);
-    uniform unsigned int min(uniform unsigned int a, uniform unsigned int b);
-    uniform int min(uniform int a, uniform int b);
+    uniform unsigned int32 min(uniform unsigned int32 a, uniform unsigned int32 b);
+    uniform int32 min(uniform int32 a, uniform int32 b);
     uniform unsigned int64 min(uniform unsigned int64 a, uniform unsigned int64 b);
     uniform int64 min(uniform int64 a, uniform int64 b);
+    uniform unsigned int128 min(uniform unsigned int128 a, uniform unsigned int128 b);
+    uniform int128 min(uniform int128 a, uniform int128 b);
 
 ::
 
@@ -5599,10 +5622,12 @@ standard types.  These functions also map to corresponding intrinsic functions.
     int8 max(int8 a, int8 b);
     unsigned int16 max(unsigned int16 a, unsigned int16 b);
     int16 max(int16 a, int16 b);
-    unsigned int max(unsigned int a, unsigned int b);
-    int max(int a, int b);
+    unsigned int32 max(unsigned int32 a, unsigned int32 b);
+    int32 max(int32 a, int32 b);
     unsigned int64 max(unsigned int64 a, unsigned int64 b);
     int64 max(int64 a, int64 b);
+    unsigned int128 max(unsigned int128 a, unsigned int128 b);
+    int128 max(int128 a, int128 b);
 
     uniform float16 max(uniform float16 a, uniform float16 b);
     uniform float max(uniform float a, uniform float b)
@@ -5611,10 +5636,12 @@ standard types.  These functions also map to corresponding intrinsic functions.
     uniform int8 max(uniform int8 a, uniform int8 b);
     uniform unsigned int16 max(uniform unsigned int16 a, uniform unsigned int16 b);
     uniform int16 max(uniform int16 a, uniform int16 b);
-    uniform unsigned int max(uniform unsigned int a, uniform unsigned int b);
-    uniform int max(uniform int a, uniform int b);
+    uniform unsigned int32 max(uniform unsigned int32 a, uniform unsigned int32 b);
+    uniform int32 max(uniform int32 a, uniform int32 b);
     uniform unsigned int64 max(uniform unsigned int64 a, uniform unsigned int64 b);
     uniform int64 max(uniform int64 a, uniform int64 b);
+    uniform unsigned int128 max(uniform unsigned int128 a, uniform unsigned int128 b);
+    uniform int128 max(uniform int128 a, uniform int128 b);
 
 The maximum and minimum functions also support short vector types with the
 basic types listed above.
@@ -5637,10 +5664,12 @@ quite efficient.)
     int8 clamp(int8 v, int8 low, int8 high)
     unsigned int16 clamp(unsigned int16 v, unsigned int16 low, unsigned int16 high)
     int16 clamp(int16 v, int16 low, int16 high)
-    unsigned int clamp(unsigned int v, unsigned int low, unsigned int high)
-    int clamp(int v, int low, int high)
+    unsigned int32 clamp(unsigned int32 v, unsigned int32 low, unsigned int32 high)
+    int32 clamp(int32 v, int32 low, int32 high)
     unsigned int64 clamp(unsigned int64 v, unsigned int64 low, unsigned int64 high)
     int64 clamp(int64 v, int64 low, int64 high)
+    unsigned int128 clamp(unsigned int128 v, unsigned int128 low, unsigned int128 high)
+    int128 clamp(int128 v, int128 low, int128 high)
 
     uniform float16 clamp(uniform float16 v, uniform float16 low, uniform float16 high)
     uniform float clamp(uniform float v, uniform float low, uniform float high)
@@ -5651,12 +5680,15 @@ quite efficient.)
     uniform unsigned int16 clamp(uniform unsigned int16 v, uniform unsigned int16 low,
                                  uniform unsigned int16 high)
     uniform int16 clamp(uniform int16 v, uniform int16 low, uniform int16 high)
-    uniform unsigned int clamp(uniform unsigned int v, uniform unsigned int low,
-                               uniform unsigned int high)
-    uniform int clamp(uniform int v, uniform int low, uniform int high)
+    uniform unsigned int32 clamp(uniform unsigned int32 v, uniform unsigned int32 low,
+                               uniform unsigned int32 high)
+    uniform int32 clamp(uniform int32 v, uniform int32 low, uniform int32 high)
     uniform unsigned int64 clamp(uniform unsigned int64 v, uniform unsigned int64 low,
                                  uniform unsigned int64 high)
     uniform int64 clamp(uniform int64 v, uniform int64 low, uniform int64 high)
+    uniform unsigned int128 clamp(uniform unsigned int128 v, uniform unsigned int128 low,
+                                 uniform unsigned int128 high)
+    uniform int128 clamp(uniform int128 v, uniform int128 low, uniform int128 high)
 
 ``clamp()`` also supports short vector types with the basic types listed above.
 
@@ -6085,8 +6117,8 @@ division of all integer types are provided by the ``ispc`` standard library.
 
 
 In addition to the ``int8`` variants of saturating arithmetic functions listed
-above, there are versions that supports ``int16``, ``int32`` and ``int64``
-values as well.
+above, there are versions that supports ``int16``, ``int32``, ``int64`` and
+``int128`` values as well.
 
 
 Dot product
@@ -6521,6 +6553,8 @@ the running program instances.
     unsigned int32 broadcast(unsigned int32 value, uniform int index)
     int64 broadcast(int64 value, uniform int index)
     unsigned int64 broadcast(unsigned int64 value, uniform int index)
+    int128 broadcast(int128 value, uniform int index)
+    unsigned int128 broadcast(unsigned int128 value, uniform int index)
     float16 broadcast(float16 value, uniform int index)
     float broadcast(float value, uniform int index)
     double broadcast(double value, uniform int index)
@@ -6544,6 +6578,8 @@ the size of the gang (it is masked to ensure valid offsets).
     int32 rotate(int32 value, uniform int offset)
     unsigned int64 rotate(unsigned int64 value, uniform int offset)
     int64 rotate(int64 value, uniform int offset)
+    unsigned int128 rotate(unsigned int128 value, uniform int offset)
+    int128 rotate(int128 value, uniform int offset)
     float16 rotate(float16 value, uniform int offset)
     float rotate(float value, uniform int offset)
     double rotate(double value, uniform int offset)
@@ -6565,6 +6601,8 @@ Instead, zeroes are shifted in where appropriate.
     unsigned int32 shift(unsigned int32 value, uniform int offset)
     int64 shift(int64 value, uniform int offset)
     unsigned int64 shift(unsigned int64 value, uniform int offset)
+    int128 shift(int128 value, uniform int offset)
+    unsigned int128 shift(unsigned int128 value, uniform int offset)
     float16 shift(float16 value, uniform int offset)
     float shift(float value, uniform int offset)
     double shift(double value, uniform int offset)
@@ -6586,6 +6624,8 @@ from which to get the value of ``value``.  The provided values for
     unsigned int32 shuffle(unsigned int32 value, int permutation)
     int64 shuffle(int64 value, int permutation)
     unsigned int64 shuffle(unsigned int64 value, int permutation)
+    int128 shuffle(int128 value, int permutation)
+    unsigned int128 shuffle(unsigned int128 value, int permutation)
     float16 shuffle(float16 value, int permutation)
     float shuffle(float value, int permutation)
     double shuffle(double value, int permutation)
@@ -6607,6 +6647,8 @@ the last element of ``value1``, etc.)
     unsigned int32 shuffle(unsigned int32 value0, unsigned int32 value1, int permutation)
     int64 shuffle(int64 value0, int64 value1, int permutation)
     unsigned int64 shuffle(unsigned int64 value0, unsigned int64 value1, int permutation)
+    int128 shuffle(int128 value0, int128 value1, int permutation)
+    unsigned int128 shuffle(unsigned int128 value0, unsigned int128 value1, int permutation)
     float16 shuffle(float16 value0, float16 value1, int permutation)
     float shuffle(float value0, float value1, int permutation)
     double shuffle(double value0, double value1, int permutation)
@@ -6630,6 +6672,8 @@ element of it as a single ``uniform`` value.
     uniform unsigned int32 extract(unsigned int32 x, uniform int i)
     uniform int64 extract(int64 x, uniform int i)
     uniform unsigned int64 extract(unsigned int64 x, uniform int i)
+    uniform int128 extract(int128 x, uniform int i)
+    uniform unsigned int128 extract(unsigned int128 x, uniform int i)
     uniform float16 extract(float16 x, uniform int i)
     uniform float extract(float x, uniform int i)
     uniform double extract(double x, uniform int i)
@@ -6648,6 +6692,8 @@ where the ``i``th element of ``x`` has been replaced with the value ``v``.
     unsigned int32 insert(unsigned int32 x, uniform int i, uniform unsigned int32 v)
     int64 insert(int64 x, uniform int i, uniform int64 v)
     unsigned int64 insert(unsigned int64 x, uniform int i, uniform unsigned int64 v)
+    int128 insert(int128 x, uniform int i, uniform int128 v)
+    unsigned int128 insert(unsigned int128 x, uniform int i, uniform unsigned int128 v)
     float16 insert(float16 x, uniform int i, uniform float16 v)
     float insert(float x, uniform int i, uniform float v)
     double insert(double x, uniform int i, uniform double v)
@@ -6673,6 +6719,8 @@ You can also compute a variety of reductions across the program instances.
 For example, the values of the given value in each of the active program
 instances are added together by the ``reduce_add()`` function.
 
+TODO [zephyr111]: check this is correct once https://github.com/ispc/ispc/issues/3834 will be fixed
+
 ::
 
     uniform int16 reduce_add(int8 x)
@@ -6681,8 +6729,10 @@ instances are added together by the ``reduce_add()`` function.
     uniform unsigned int32 reduce_add(unsigned int16 x)
     uniform int64 reduce_add(int32 x)
     uniform unsigned int64 reduce_add(unsigned int32 x)
-    uniform int64 reduce_add(int64 x)
-    uniform unsigned int64 reduce_add(unsigned int64 x)
+    uniform int128 reduce_add(int64 x)
+    uniform unsigned int128 reduce_add(unsigned int64 x)
+    uniform int128 reduce_add(int128 x)
+    uniform unsigned int128 reduce_add(unsigned int128 x)
 
     uniform float16 reduce_add(float16 x)
     uniform float reduce_add(float x)
@@ -6701,6 +6751,8 @@ across all of the currently-executing program instances.
     uniform unsigned int32 reduce_min(unsigned int32 a)
     uniform int64 reduce_min(int64 a)
     uniform unsigned int64 reduce_min(unsigned int64 a)
+    uniform int128 reduce_min(int128 a)
+    uniform unsigned int128 reduce_min(unsigned int128 a)
 
     uniform float16 reduce_min(float16 a)
     uniform float reduce_min(float a)
@@ -6719,6 +6771,8 @@ varying variable over the active program instances.
     uniform unsigned int32 reduce_max(unsigned int32 a)
     uniform int64 reduce_max(int64 a)
     uniform unsigned int64 reduce_max(unsigned int64 a)
+    uniform int128 reduce_max(int128 a)
+    uniform unsigned int128 reduce_max(unsigned int128 a)
 
     uniform float16 reduce_max(float16 a)
     uniform float reduce_max(float a)
@@ -6737,6 +6791,8 @@ all of the currently-running program instances:
     uniform bool reduce_equal(unsigned int32 v)
     uniform bool reduce_equal(int64 v)
     uniform bool reduce_equal(unsigned int64 v)
+    uniform bool reduce_equal(int128 v)
+    uniform bool reduce_equal(unsigned int128 v)
 
     uniform bool reduce_equal(float16 v)
     uniform bool reduce_equal(float v)
@@ -6763,6 +6819,9 @@ performance in the `Performance Guide`_.
     uniform bool reduce_equal(int64 v, uniform int64 * uniform sameval)
     uniform bool reduce_equal(unsigned int64 v,
                               uniform unsigned int64 * uniform sameval)
+    uniform bool reduce_equal(int128 v, uniform int128 * uniform sameval)
+    uniform bool reduce_equal(unsigned int128 v,
+                              uniform unsigned int128 * uniform sameval)
 
     uniform bool reduce_equal(float16 v, uniform float16 * uniform sameval)
     uniform bool reduce_equal(float v, uniform float * uniform sameval)
@@ -6803,6 +6862,8 @@ bitwise-or are available:
     float exclusive_scan_add(float v)
     int64 exclusive_scan_add(int64 v)
     unsigned int64 exclusive_scan_add(unsigned int64 v)
+    int128 exclusive_scan_add(int128 v)
+    unsigned int128 exclusive_scan_add(unsigned int128 v)
     double exclusive_scan_add(double v)
     int8 exclusive_scan_and(int8 v)
     unsigned int8 exclusive_scan_and(unsigned int8 v)
@@ -6812,6 +6873,8 @@ bitwise-or are available:
     unsigned int32 exclusive_scan_and(unsigned int32 v)
     int64 exclusive_scan_and(int64 v)
     unsigned int64 exclusive_scan_and(unsigned int64 v)
+    int128 exclusive_scan_and(int128 v)
+    unsigned int128 exclusive_scan_and(unsigned int128 v)
     int8 exclusive_scan_or(int8 v)
     unsigned int8 exclusive_scan_or(unsigned int8 v)
     int16 exclusive_scan_or(int16 v)
@@ -6820,6 +6883,8 @@ bitwise-or are available:
     unsigned int32 exclusive_scan_or(unsigned int32 v)
     int64 exclusive_scan_or(int64 v)
     unsigned int64 exclusive_scan_or(unsigned int64 v)
+    int128 exclusive_scan_or(int128 v)
+    unsigned int128 exclusive_scan_or(unsigned int128 v)
 
 The returned value for the first program instance will be ``0`` for
 ``exclusive_scan_add`` and ``exclusive_scan_or``, and have all bits set to
@@ -6915,14 +6980,18 @@ variable.  They return the total number of values loaded.
                                    varying int16 * uniform val)
     uniform int packed_load_active(uniform unsigned int16 * uniform base,
                                    varying unsigned int16 * uniform val)
-    uniform int packed_load_active(uniform int * uniform base,
-                                   varying int * uniform val)
-    uniform int packed_load_active(uniform unsigned int * uniform base,
-                                   varying unsigned int * uniform val)
+    uniform int packed_load_active(uniform int32 * uniform base,
+                                   varying int32 * uniform val)
+    uniform int packed_load_active(uniform unsigned int32 * uniform base,
+                                   varying unsigned int32 * uniform val)
     uniform int packed_load_active(uniform int64 * uniform base,
                                    varying int64 * uniform val)
     uniform int packed_load_active(uniform unsigned int64 * uniform base,
                                    varying unsigned int64 * uniform val)
+    uniform int packed_load_active(uniform int128 * uniform base,
+                                   varying int128 * uniform val)
+    uniform int packed_load_active(uniform unsigned int128 * uniform base,
+                                   varying unsigned int128 * uniform val)
     uniform int packed_load_active(uniform float16 * uniform base,
                                    varying float16 * uniform val)
     uniform int packed_load_active(uniform float * uniform base,
@@ -6945,14 +7014,18 @@ They return the total number of values stored.
                                     int16 val)
     uniform int packed_store_active(uniform unsigned int16 * uniform base,
                                     unsigned int16 val)
-    uniform int packed_store_active(uniform int * uniform base,
-                                    int val)
-    uniform int packed_store_active(uniform unsigned int * uniform base,
-                                    unsigned int val)
+    uniform int packed_store_active(uniform int32 * uniform base,
+                                    int32 val)
+    uniform int packed_store_active(uniform unsigned int32 * uniform base,
+                                    unsigned int32 val)
     uniform int packed_store_active(uniform int64 * uniform base,
                                     int64 val)
     uniform int packed_store_active(uniform unsigned int64 * uniform base,
                                     unsigned int64 val)
+    uniform int packed_store_active(uniform int128 * uniform base,
+                                    int128 val)
+    uniform int packed_store_active(uniform unsigned int128 * uniform base,
+                                    unsigned int128 val)
     uniform int packed_store_active(uniform float16 * uniform base,
                                     float16 val)
     uniform int packed_store_active(uniform float * uniform base,
@@ -7012,10 +7085,12 @@ For storing to array from varying variable:
     void streaming_store(uniform int8 a[], int8 vals)
     void streaming_store(uniform unsigned int16 a[], unsigned int16 vals)
     void streaming_store(uniform int16 a[], int16 vals)
-    void streaming_store(uniform unsigned int a[], unsigned int vals)
-    void streaming_store(uniform int a[], int vals)
+    void streaming_store(uniform unsigned int32 a[], unsigned int32 vals)
+    void streaming_store(uniform int32 a[], int32 vals)
     void streaming_store(uniform unsigned int64 a[], unsigned int64 vals)
     void streaming_store(uniform int64 a[], int64 vals)
+    void streaming_store(uniform unsigned int128 a[], unsigned int128 vals)
+    void streaming_store(uniform int128 a[], int128 vals)
     void streaming_store(uniform float16 a[], float16 vals)
     void streaming_store(uniform float a[], float vals)
     void streaming_store(uniform double a[], double vals)
@@ -7028,10 +7103,12 @@ For storing to array from uniform variable:
     void streaming_store(uniform int8 a[], uniform int8 vals)
     void streaming_store(uniform unsigned int16 a[], uniform unsigned int16 vals)
     void streaming_store(uniform int16 a[], uniform int16 vals)
-    void streaming_store(uniform unsigned int a[], uniform unsigned int vals)
-    void streaming_store(uniform int a[], uniform int vals)
+    void streaming_store(uniform unsigned int32 a[], uniform unsigned int32 vals)
+    void streaming_store(uniform int32 a[], uniform int32 vals)
     void streaming_store(uniform unsigned int64 a[], uniform unsigned int64 vals)
     void streaming_store(uniform int64 a[], uniform int64 vals)
+    void streaming_store(uniform unsigned int128 a[], uniform unsigned int128 vals)
+    void streaming_store(uniform int128 a[], uniform int128 vals)
     void streaming_store(uniform float16 a[], uniform float16 vals)
     void streaming_store(uniform float a[], uniform float vals)
     void streaming_store(uniform double a[], uniform double vals)
@@ -7046,10 +7123,12 @@ For loading as varying from array:
     varying int8 streaming_load(uniform int8 a[])
     varying unsigned int16 streaming_load(uniform unsigned int16 a[])
     varying int16 streaming_load(uniform int16 a[])
-    varying unsigned int streaming_load(uniform unsigned int a[])
-    varying int streaming_load(uniform int a[])
+    varying unsigned int32 streaming_load(uniform unsigned int32 a[])
+    varying int32 streaming_load(uniform int32 a[])
     varying unsigned int64 streaming_load(uniform unsigned int64 a[])
     varying int64 streaming_load(uniform int64 a[])
+    varying unsigned int128 streaming_load(uniform unsigned int128 a[])
+    varying int128 streaming_load(uniform int128 a[])
     varying float16 streaming_load(uniform float16 a[])
     varying float streaming_load(uniform float a[])
     varying double streaming_load(uniform double a[])
@@ -7062,10 +7141,12 @@ For loading as uniform from array:
     uniform int8 streaming_load_uniform(uniform int8 a[])
     uniform unsigned int16 streaming_load_uniform(uniform unsigned int16 a[])
     uniform int16 streaming_load_uniform(uniform int16 a[])
-    uniform unsigned int streaming_load_uniform(uniform unsigned int a[])
-    uniform int streaming_load_uniform(uniform int a[])
+    uniform unsigned int32 streaming_load_uniform(uniform unsigned int32 a[])
+    uniform int32 streaming_load_uniform(uniform int32 a[])
     uniform unsigned int64 streaming_load_uniform(uniform unsigned int64 a[])
     uniform int64 streaming_load_uniform(uniform int64 a[])
+    uniform unsigned int128 streaming_load_uniform(uniform unsigned int128 a[])
+    uniform int128 streaming_load_uniform(uniform int128 a[])
     uniform float16 streaming_load_uniform(uniform float16 a[])
     uniform float streaming_load_uniform(uniform float a[])
     uniform double streaming_load_uniform(uniform double a[])
@@ -7328,6 +7409,8 @@ if multiple processors simultaneously issue atomic adds to the same memory
 location, the adds will be serialized by the hardware so that the correct
 result is computed in the end.
 
+TODO [zephyr111]: implement 128-bit atomic functions
+
 Here are the declarations of the ``int32`` variants of these functions.
 There are also ``int64`` equivalents as well as variants that take
 ``unsigned`` ``int32`` and ``int64`` values.
@@ -7439,6 +7522,8 @@ And:
 ::
 
   void *atomic_swap_{local,global}(void * * ptr, void *value)
+
+TODO [zephyr111]: update this part of the doc regarding 128-bit integers
 
 There are also atomic "compare and exchange" functions.  Compare and
 exchange atomically compares the value in "val" to "compare"--if they

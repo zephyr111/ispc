@@ -428,9 +428,20 @@ Avoid Computation With 8 and 16-bit Integer Types
 -------------------------------------------------
 
 The code generated for 8 and 16-bit integer types is generally not as
-efficient as the code generated for 32-bit integer types.  It is generally
+efficient as the code generated for 32-bit integer types. It is generally
 worthwhile to use 32-bit integer types for intermediate computations, even
 if the final result will be stored in a smaller integer type.
+
+Avoid Computation With 128-bit Integer Types
+--------------------------------------------
+
+The code generated for 128-bit integer types is generally not very fast.
+Varying 128-bit types are especially slow to compute since most targets don't
+support it natively yet. Indeed, although some target (e.g. x86) provide
+instructions to make uniform 128-bit integer operations reasonably fast, 
+almost none of them provide the equivalent SIMD instructions to compute
+128-bit integers efficiently yet. As a result, varying 128-bit integers are
+currently computed using scalar instructions on such targets.
 
 Implementing Reductions Efficiently
 -----------------------------------
