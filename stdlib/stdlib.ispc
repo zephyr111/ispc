@@ -3195,9 +3195,7 @@ __declspec(safe, cost2) static inline uniform int128 clamp(uniform int128 v, uni
 
 static inline void memory_barrier() { __memory_barrier(); }
 
-// TODO [zephyr111]: same thing here that for the isph header
-
-#define DEFINE_ATOMIC_OP(TA, TB, OPA, OPB, MASKTYPE, TC)                                                               \
+#define DEFINE_ATOMIC_OP(TA, TB, OPA, OPB, MASKTYPE)                                                                   \
     static inline TA atomic_##OPA##_global(uniform TA *uniform ptr, TA value) {                                        \
         TA ret = __atomic_##OPB##_##TB##_global((opaque_ptr_t)ptr, value, (MASKTYPE)__mask);                           \
         return ret;                                                                                                    \
@@ -3219,7 +3217,7 @@ static inline void memory_barrier() { __memory_barrier(); }
         return ret;                                                                                                    \
     }
 
-#define DEFINE_ATOMIC_SWAP(TA, TB, MASKTYPE, TC)                                                                       \
+#define DEFINE_ATOMIC_SWAP(TA, TB, MASKTYPE)                                                                           \
     static inline TA atomic_swap_global(uniform TA *uniform ptr, TA value) {                                           \
         uniform int i = 0;                                                                                             \
         TA ret[programCount];                                                                                          \
@@ -3269,7 +3267,7 @@ static inline void memory_barrier() { __memory_barrier(); }
         return ret;                                                                                                    \
     }
 
-#define DEFINE_ATOMIC_MINMAX_OP(TA, TB, OPA, OPB, MASKTYPE, TC)                                                        \
+#define DEFINE_ATOMIC_MINMAX_OP(TA, TB, OPA, OPB, MASKTYPE)                                                            \
     static inline TA atomic_##OPA##_global(uniform TA *uniform ptr, TA value) {                                        \
         uniform TA oneval = reduce_##OPA(value);                                                                       \
         TA ret;                                                                                                        \
@@ -3294,63 +3292,7 @@ static inline void memory_barrier() { __memory_barrier(); }
         return ret;                                                                                                    \
     }
 
-DEFINE_ATOMIC_OP(int32, int32, add, add, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int32, int32, subtract, sub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(int32, int32, min, min, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(int32, int32, max, max, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int32, int32, and, and, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int32, int32, or, or, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int32, int32, xor, xor, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP(int32, int32, IntMaskType, int64)
-
-// For everything but atomic min and max, we can use the same
-// implementations for unsigned as for signed.
-DEFINE_ATOMIC_OP(unsigned int32, int32, add, add, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int32, int32, subtract, sub, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP(unsigned int32, uint32, min, umin, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP(unsigned int32, uint32, max, umax, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int32, int32, and, and, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int32, int32, or, or, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int32, int32, xor, xor, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_SWAP(unsigned int32, int32, UIntMaskType, unsigned int64)
-
-DEFINE_ATOMIC_OP(float, float, add, fadd, IntMaskType, int64)
-DEFINE_ATOMIC_OP(float, float, subtract, fsub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(float, float, min, fmin, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(float, float, max, fmax, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP(float, float, IntMaskType, int64)
-
-DEFINE_ATOMIC_OP(int64, int64, add, add, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int64, int64, subtract, sub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(int64, int64, min, min, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(int64, int64, max, max, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int64, int64, and, and, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int64, int64, or, or, IntMaskType, int64)
-DEFINE_ATOMIC_OP(int64, int64, xor, xor, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP(int64, int64, IntMaskType, int64)
-
-// For everything but atomic min and max, we can use the same
-// implementations for unsigned as for signed.
-DEFINE_ATOMIC_OP(unsigned int64, int64, add, add, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int64, int64, subtract, sub, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP(unsigned int64, uint64, min, umin, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP(unsigned int64, uint64, max, umax, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int64, int64, and, and, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int64, int64, or, or, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP(unsigned int64, int64, xor, xor, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_SWAP(unsigned int64, int64, UIntMaskType, unsigned int64)
-
-DEFINE_ATOMIC_OP(double, double, add, fadd, IntMaskType, int64)
-DEFINE_ATOMIC_OP(double, double, subtract, fsub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(double, double, min, fmin, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP(double, double, max, fmax, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP(double, double, IntMaskType, int64)
-
-#undef DEFINE_ATOMIC_OP
-#undef DEFINE_ATOMIC_MINMAX_OP
-#undef DEFINE_ATOMIC_SWAP
-
-#define ATOMIC_DECL_CMPXCHG(TA, TB, MASKTYPE, TC)                                                                      \
+#define ATOMIC_DECL_CMPXCHG(TA, TB, MASKTYPE)                                                                          \
     static inline uniform TA atomic_compare_exchange_global(uniform TA *uniform ptr, uniform TA oldval,                \
                                                             uniform TA newval) {                                       \
         uniform TA ret = __atomic_compare_exchange_uniform_##TB##_global((opaque_ptr_t)ptr, oldval, newval);           \
@@ -3372,13 +3314,87 @@ DEFINE_ATOMIC_SWAP(double, double, IntMaskType, int64)
         return ret;                                                                                                    \
     }
 
-ATOMIC_DECL_CMPXCHG(int32, int32, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG(unsigned int32, int32, UIntMaskType, unsigned int64)
-ATOMIC_DECL_CMPXCHG(float, float, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG(int64, int64, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG(unsigned int64, int64, UIntMaskType, unsigned int64)
-ATOMIC_DECL_CMPXCHG(double, double, IntMaskType, int64)
+// For everything but atomic min and max, we can use the same
+// implementations for unsigned as for signed.
 
+DEFINE_ATOMIC_OP(int32, int32, add, add, IntMaskType)
+DEFINE_ATOMIC_OP(int32, int32, subtract, sub, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int32, int32, min, min, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int32, int32, max, max, IntMaskType)
+DEFINE_ATOMIC_OP(int32, int32, and, and, IntMaskType)
+DEFINE_ATOMIC_OP(int32, int32, or, or, IntMaskType)
+DEFINE_ATOMIC_OP(int32, int32, xor, xor, IntMaskType)
+DEFINE_ATOMIC_SWAP(int32, int32, IntMaskType)
+
+DEFINE_ATOMIC_OP(unsigned int32, int32, add, add, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int32, int32, subtract, sub, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int32, uint32, min, umin, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int32, uint32, max, umax, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int32, int32, and, and, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int32, int32, or, or, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int32, int32, xor, xor, UIntMaskType)
+DEFINE_ATOMIC_SWAP(unsigned int32, int32, UIntMaskType)
+
+DEFINE_ATOMIC_OP(int64, int64, add, add, IntMaskType)
+DEFINE_ATOMIC_OP(int64, int64, subtract, sub, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int64, int64, min, min, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int64, int64, max, max, IntMaskType)
+DEFINE_ATOMIC_OP(int64, int64, and, and, IntMaskType)
+DEFINE_ATOMIC_OP(int64, int64, or, or, IntMaskType)
+DEFINE_ATOMIC_OP(int64, int64, xor, xor, IntMaskType)
+DEFINE_ATOMIC_SWAP(int64, int64, IntMaskType)
+
+DEFINE_ATOMIC_OP(unsigned int64, int64, add, add, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int64, int64, subtract, sub, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int64, uint64, min, umin, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int64, uint64, max, umax, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int64, int64, and, and, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int64, int64, or, or, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int64, int64, xor, xor, UIntMaskType)
+DEFINE_ATOMIC_SWAP(unsigned int64, int64, UIntMaskType)
+
+DEFINE_ATOMIC_OP(int128, int128, add, add, IntMaskType)
+DEFINE_ATOMIC_OP(int128, int128, subtract, sub, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int128, int128, min, min, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(int128, int128, max, max, IntMaskType)
+DEFINE_ATOMIC_OP(int128, int128, and, and, IntMaskType)
+DEFINE_ATOMIC_OP(int128, int128, or, or, IntMaskType)
+DEFINE_ATOMIC_OP(int128, int128, xor, xor, IntMaskType)
+DEFINE_ATOMIC_SWAP(int128, int128, IntMaskType)
+
+DEFINE_ATOMIC_OP(unsigned int128, int128, add, add, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int128, int128, subtract, sub, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int128, uint128, min, umin, UIntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(unsigned int128, uint128, max, umax, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int128, int128, and, and, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int128, int128, or, or, UIntMaskType)
+DEFINE_ATOMIC_OP(unsigned int128, int128, xor, xor, UIntMaskType)
+DEFINE_ATOMIC_SWAP(unsigned int128, int128, UIntMaskType)
+
+DEFINE_ATOMIC_OP(float, float, add, fadd, IntMaskType)
+DEFINE_ATOMIC_OP(float, float, subtract, fsub, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(float, float, min, fmin, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(float, float, max, fmax, IntMaskType)
+DEFINE_ATOMIC_SWAP(float, float, IntMaskType)
+
+DEFINE_ATOMIC_OP(double, double, add, fadd, IntMaskType)
+DEFINE_ATOMIC_OP(double, double, subtract, fsub, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(double, double, min, fmin, IntMaskType)
+DEFINE_ATOMIC_MINMAX_OP(double, double, max, fmax, IntMaskType)
+DEFINE_ATOMIC_SWAP(double, double, IntMaskType)
+
+ATOMIC_DECL_CMPXCHG(int32, int32, IntMaskType)
+ATOMIC_DECL_CMPXCHG(unsigned int32, int32, UIntMaskType)
+ATOMIC_DECL_CMPXCHG(int64, int64, IntMaskType)
+ATOMIC_DECL_CMPXCHG(unsigned int64, int64, UIntMaskType)
+ATOMIC_DECL_CMPXCHG(int128, int128, IntMaskType)
+ATOMIC_DECL_CMPXCHG(unsigned int128, int128, UIntMaskType)
+ATOMIC_DECL_CMPXCHG(float, float, IntMaskType)
+ATOMIC_DECL_CMPXCHG(double, double, IntMaskType)
+
+#undef DEFINE_ATOMIC_OP
+#undef DEFINE_ATOMIC_MINMAX_OP
+#undef DEFINE_ATOMIC_SWAP
 #undef ATOMIC_DECL_CMPXCHG
 
 // void * variants of swap and compare exchange
@@ -3412,29 +3428,60 @@ static inline void *atomic_compare_exchange_global(void **ptr, void *oldval, voi
 ///////////////////////////////////////////////////////////////////////////
 // local atomics
 
-#define LOCAL_ATOMIC(TYPE, NAME, OPFUNC)                                                                               \
-    static inline uniform TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, uniform TYPE value) {                  \
-        uniform TYPE ret = *ptr;                                                                                       \
-        *ptr = OPFUNC(*ptr, value);                                                                                    \
-        return ret;                                                                                                    \
-    }                                                                                                                  \
-    static inline TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, TYPE value) {                                  \
-        TYPE ret;                                                                                                      \
-        foreach_active(i) {                                                                                            \
-            ret = insert(ret, i, *ptr);                                                                                \
-            *ptr = OPFUNC(*ptr, extract(value, i));                                                                    \
-        }                                                                                                              \
-        return ret;                                                                                                    \
-    }                                                                                                                  \
-    static inline TYPE atomic_##NAME##_local(uniform TYPE *p, TYPE value) {                                            \
-        TYPE ret;                                                                                                      \
-        uniform TYPE *uniform ptrs[programCount];                                                                      \
-        ptrs[programIndex] = p;                                                                                        \
-        foreach_active(i) {                                                                                            \
-            ret = insert(ret, i, *ptrs[i]);                                                                            \
-            *ptrs[i] = OPFUNC(*ptrs[i], extract(value, i));                                                            \
-        }                                                                                                              \
-        return ret;                                                                                                    \
+#define LOCAL_ATOMIC(TYPE, NAME, OPFUNC)                                                                     \
+    static inline uniform TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, uniform TYPE value) {        \
+        uniform TYPE ret = *ptr;                                                                             \
+        *ptr = OPFUNC(*ptr, value);                                                                          \
+        return ret;                                                                                          \
+    }                                                                                                        \
+    static inline TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, TYPE value) {                        \
+        TYPE ret;                                                                                            \
+        foreach_active(i) {                                                                                  \
+            ret = insert(ret, i, *ptr);                                                                      \
+            *ptr = OPFUNC(*ptr, extract(value, i));                                                          \
+        }                                                                                                    \
+        return ret;                                                                                          \
+    }                                                                                                        \
+    static inline TYPE atomic_##NAME##_local(uniform TYPE *p, TYPE value) {                                  \
+        TYPE ret;                                                                                            \
+        uniform TYPE *uniform ptrs[programCount];                                                            \
+        ptrs[programIndex] = p;                                                                              \
+        foreach_active(i) {                                                                                  \
+            ret = insert(ret, i, *ptrs[i]);                                                                  \
+            *ptrs[i] = OPFUNC(*ptrs[i], extract(value, i));                                                  \
+        }                                                                                                    \
+        return ret;                                                                                          \
+    }
+
+#define LOCAL_CMPXCHG(TYPE)                                                                                  \
+    static inline uniform TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, uniform TYPE cmp,    \
+                                                             uniform TYPE update) {                          \
+        uniform TYPE old = *ptr;                                                                             \
+        if (old == cmp)                                                                                      \
+            *ptr = update;                                                                                   \
+        return old;                                                                                          \
+    }                                                                                                        \
+    static inline TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, TYPE cmp, TYPE update) {     \
+        TYPE ret;                                                                                            \
+        foreach_active(i) {                                                                                  \
+            uniform TYPE old = *ptr;                                                                         \
+            if (old == extract(cmp, i))                                                                      \
+                *ptr = extract(update, i);                                                                   \
+            ret = insert(ret, i, old);                                                                       \
+        }                                                                                                    \
+        return ret;                                                                                          \
+    }                                                                                                        \
+    static inline TYPE atomic_compare_exchange_local(uniform TYPE *varying p, TYPE cmp, TYPE update) {       \
+        uniform TYPE *uniform ptrs[programCount];                                                            \
+        ptrs[programIndex] = p;                                                                              \
+        TYPE ret;                                                                                            \
+        foreach_active(i) {                                                                                  \
+            uniform TYPE old = *ptrs[i];                                                                     \
+            if (old == extract(cmp, i))                                                                      \
+                *ptrs[i] = extract(update, i);                                                               \
+            ret = insert(ret, i, old);                                                                       \
+        }                                                                                                    \
+        return ret;                                                                                          \
     }
 
 static inline uniform int32 __add(uniform int32 a, uniform int32 b) { return a + b; }
@@ -3451,10 +3498,6 @@ static inline uniform unsigned int32 __or(uniform unsigned int32 a, uniform unsi
 static inline uniform unsigned int32 __xor(uniform unsigned int32 a, uniform unsigned int32 b) { return a ^ b; }
 static inline uniform unsigned int32 __swap(uniform unsigned int32 a, uniform unsigned int32 b) { return b; }
 
-static inline uniform float __add(uniform float a, uniform float b) { return a + b; }
-static inline uniform float __sub(uniform float a, uniform float b) { return a - b; }
-static inline uniform float __swap(uniform float a, uniform float b) { return b; }
-
 static inline uniform int64 __add(uniform int64 a, uniform int64 b) { return a + b; }
 static inline uniform int64 __sub(uniform int64 a, uniform int64 b) { return a - b; }
 static inline uniform int64 __and(uniform int64 a, uniform int64 b) { return a & b; }
@@ -3468,6 +3511,24 @@ static inline uniform unsigned int64 __and(uniform unsigned int64 a, uniform uns
 static inline uniform unsigned int64 __or(uniform unsigned int64 a, uniform unsigned int64 b) { return a | b; }
 static inline uniform unsigned int64 __xor(uniform unsigned int64 a, uniform unsigned int64 b) { return a ^ b; }
 static inline uniform unsigned int64 __swap(uniform unsigned int64 a, uniform unsigned int64 b) { return b; }
+
+static inline uniform int128 __add(uniform int128 a, uniform int128 b) { return a + b; }
+static inline uniform int128 __sub(uniform int128 a, uniform int128 b) { return a - b; }
+static inline uniform int128 __and(uniform int128 a, uniform int128 b) { return a & b; }
+static inline uniform int128 __or(uniform int128 a, uniform int128 b) { return a | b; }
+static inline uniform int128 __xor(uniform int128 a, uniform int128 b) { return a ^ b; }
+static inline uniform int128 __swap(uniform int128 a, uniform int128 b) { return b; }
+
+static inline uniform unsigned int128 __add(uniform unsigned int128 a, uniform unsigned int128 b) { return a + b; }
+static inline uniform unsigned int128 __sub(uniform unsigned int128 a, uniform unsigned int128 b) { return a - b; }
+static inline uniform unsigned int128 __and(uniform unsigned int128 a, uniform unsigned int128 b) { return a & b; }
+static inline uniform unsigned int128 __or(uniform unsigned int128 a, uniform unsigned int128 b) { return a | b; }
+static inline uniform unsigned int128 __xor(uniform unsigned int128 a, uniform unsigned int128 b) { return a ^ b; }
+static inline uniform unsigned int128 __swap(uniform unsigned int128 a, uniform unsigned int128 b) { return b; }
+
+static inline uniform float __add(uniform float a, uniform float b) { return a + b; }
+static inline uniform float __sub(uniform float a, uniform float b) { return a - b; }
+static inline uniform float __swap(uniform float a, uniform float b) { return b; }
 
 static inline uniform double __add(uniform double a, uniform double b) { return a + b; }
 static inline uniform double __sub(uniform double a, uniform double b) { return a - b; }
@@ -3491,12 +3552,6 @@ LOCAL_ATOMIC(unsigned int32, min, min)
 LOCAL_ATOMIC(unsigned int32, max, max)
 LOCAL_ATOMIC(unsigned int32, swap, __swap)
 
-LOCAL_ATOMIC(float, add, __add)
-LOCAL_ATOMIC(float, subtract, __sub)
-LOCAL_ATOMIC(float, min, min)
-LOCAL_ATOMIC(float, max, max)
-LOCAL_ATOMIC(float, swap, __swap)
-
 LOCAL_ATOMIC(int64, add, __add)
 LOCAL_ATOMIC(int64, subtract, __sub)
 LOCAL_ATOMIC(int64, and, __and)
@@ -3515,49 +3570,43 @@ LOCAL_ATOMIC(unsigned int64, min, min)
 LOCAL_ATOMIC(unsigned int64, max, max)
 LOCAL_ATOMIC(unsigned int64, swap, __swap)
 
+LOCAL_ATOMIC(int128, add, __add)
+LOCAL_ATOMIC(int128, subtract, __sub)
+LOCAL_ATOMIC(int128, and, __and)
+LOCAL_ATOMIC(int128, or, __or)
+LOCAL_ATOMIC(int128, xor, __xor)
+LOCAL_ATOMIC(int128, min, min)
+LOCAL_ATOMIC(int128, max, max)
+LOCAL_ATOMIC(int128, swap, __swap)
+
+LOCAL_ATOMIC(unsigned int128, add, __add)
+LOCAL_ATOMIC(unsigned int128, subtract, __sub)
+LOCAL_ATOMIC(unsigned int128, and, __and)
+LOCAL_ATOMIC(unsigned int128, or, __or)
+LOCAL_ATOMIC(unsigned int128, xor, __xor)
+LOCAL_ATOMIC(unsigned int128, min, min)
+LOCAL_ATOMIC(unsigned int128, max, max)
+LOCAL_ATOMIC(unsigned int128, swap, __swap)
+
+LOCAL_ATOMIC(float, add, __add)
+LOCAL_ATOMIC(float, subtract, __sub)
+LOCAL_ATOMIC(float, min, min)
+LOCAL_ATOMIC(float, max, max)
+LOCAL_ATOMIC(float, swap, __swap)
+
 LOCAL_ATOMIC(double, add, __add)
 LOCAL_ATOMIC(double, subtract, __sub)
 LOCAL_ATOMIC(double, min, min)
 LOCAL_ATOMIC(double, max, max)
 LOCAL_ATOMIC(double, swap, __swap)
 
-// compare exchange
-#define LOCAL_CMPXCHG(TYPE)                                                                                            \
-    static inline uniform TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, uniform TYPE cmp,              \
-                                                             uniform TYPE update) {                                    \
-        uniform TYPE old = *ptr;                                                                                       \
-        if (old == cmp)                                                                                                \
-            *ptr = update;                                                                                             \
-        return old;                                                                                                    \
-    }                                                                                                                  \
-    static inline TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, TYPE cmp, TYPE update) {               \
-        TYPE ret;                                                                                                      \
-        foreach_active(i) {                                                                                            \
-            uniform TYPE old = *ptr;                                                                                   \
-            if (old == extract(cmp, i))                                                                                \
-                *ptr = extract(update, i);                                                                             \
-            ret = insert(ret, i, old);                                                                                 \
-        }                                                                                                              \
-        return ret;                                                                                                    \
-    }                                                                                                                  \
-    static inline TYPE atomic_compare_exchange_local(uniform TYPE *varying p, TYPE cmp, TYPE update) {                 \
-        uniform TYPE *uniform ptrs[programCount];                                                                      \
-        ptrs[programIndex] = p;                                                                                        \
-        TYPE ret;                                                                                                      \
-        foreach_active(i) {                                                                                            \
-            uniform TYPE old = *ptrs[i];                                                                               \
-            if (old == extract(cmp, i))                                                                                \
-                *ptrs[i] = extract(update, i);                                                                         \
-            ret = insert(ret, i, old);                                                                                 \
-        }                                                                                                              \
-        return ret;                                                                                                    \
-    }
-
 LOCAL_CMPXCHG(int32)
 LOCAL_CMPXCHG(unsigned int32)
-LOCAL_CMPXCHG(float)
 LOCAL_CMPXCHG(int64)
 LOCAL_CMPXCHG(unsigned int64)
+LOCAL_CMPXCHG(int128)
+LOCAL_CMPXCHG(unsigned int128)
+LOCAL_CMPXCHG(float)
 LOCAL_CMPXCHG(double)
 
 #undef LOCAL_ATOMIC

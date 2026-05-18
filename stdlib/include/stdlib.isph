@@ -836,91 +836,100 @@ __declspec(safe, cost2) inline uniform int128 clamp(uniform int128 v, uniform in
 
 inline void memory_barrier();
 
-// TODO [zephyr111]: to implement later (after some code-cleaning)
+#define DEFINE_ATOMIC_OP_DECL(TYPE, OP)                                                                      \
+    inline TYPE atomic_##OP##_global(uniform TYPE *uniform ptr, TYPE value);                                 \
+    inline uniform TYPE atomic_##OP##_global(uniform TYPE *uniform ptr, uniform TYPE value);                 \
+    inline TYPE atomic_##OP##_global(uniform TYPE *varying ptr, TYPE value);
 
-#define DEFINE_ATOMIC_OP_DECL(TA, TB, OPA, OPB, MASKTYPE, TC)                                                          \
-    inline TA atomic_##OPA##_global(uniform TA *uniform ptr, TA value);                                                \
-    inline uniform TA atomic_##OPA##_global(uniform TA *uniform ptr, uniform TA value);                                \
-    inline TA atomic_##OPA##_global(uniform TA *varying ptr, TA value);
+#define DEFINE_ATOMIC_SWAP_DECL(TYPE)                                                                        \
+    inline TYPE atomic_swap_global(uniform TYPE *uniform ptr, TYPE value);                                   \
+    inline uniform TYPE atomic_swap_global(uniform TYPE *uniform ptr, uniform TYPE value);                   \
+    inline TYPE atomic_swap_global(uniform TYPE *varying ptr, TYPE value);
 
-#define DEFINE_ATOMIC_SWAP_DECL(TA, TB, MASKTYPE, TC)                                                                  \
-    inline TA atomic_swap_global(uniform TA *uniform ptr, TA value);                                                   \
-    inline uniform TA atomic_swap_global(uniform TA *uniform ptr, uniform TA value);                                   \
-    inline TA atomic_swap_global(uniform TA *varying ptr, TA value);
+#define ATOMIC_DECL_CMPXCHG_DECL(TYPE)                                                                       \
+    inline uniform TYPE atomic_compare_exchange_global(uniform TYPE *uniform ptr, uniform TYPE oldval,       \
+                                                      uniform TYPE newval);                                  \
+    inline TYPE atomic_compare_exchange_global(uniform TYPE *uniform ptr, TYPE oldval, TYPE newval);         \
+    inline TYPE atomic_compare_exchange_global(uniform TYPE *varying ptr, TYPE oldval, TYPE newval);
 
-#define DEFINE_ATOMIC_MINMAX_OP_DECL(TA, TB, OPA, OPB, MASKTYPE, TC)                                                   \
-    inline TA atomic_##OPA##_global(uniform TA *uniform ptr, TA value);                                                \
-    inline uniform TA atomic_##OPA##_global(uniform TA *uniform ptr, uniform TA value);                                \
-    inline TA atomic_##OPA##_global(uniform TA *varying ptr, TA value);
+DEFINE_ATOMIC_OP_DECL(int32, add)
+DEFINE_ATOMIC_OP_DECL(int32, subtract)
+DEFINE_ATOMIC_OP_DECL(int32, min)
+DEFINE_ATOMIC_OP_DECL(int32, max)
+DEFINE_ATOMIC_OP_DECL(int32, and)
+DEFINE_ATOMIC_OP_DECL(int32, or)
+DEFINE_ATOMIC_OP_DECL(int32, xor)
+DEFINE_ATOMIC_SWAP_DECL(int32)
 
-DEFINE_ATOMIC_OP_DECL(int32, int32, add, add, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int32, int32, subtract, sub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(int32, int32, min, min, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(int32, int32, max, max, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int32, int32, and, and, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int32, int32, or, or, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int32, int32, xor, xor, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP_DECL(int32, int32, IntMaskType, int64)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, add)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, subtract)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, min)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, max)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, and)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, or)
+DEFINE_ATOMIC_OP_DECL(unsigned int32, xor)
+DEFINE_ATOMIC_SWAP_DECL(unsigned int32)
 
-// For everything but atomic min and max, we can use the same
-// implementations for unsigned as for signed.
-DEFINE_ATOMIC_OP_DECL(unsigned int32, int32, add, add, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int32, int32, subtract, sub, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(unsigned int32, uint32, min, umin, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(unsigned int32, uint32, max, umax, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int32, int32, and, and, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int32, int32, or, or, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int32, int32, xor, xor, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_SWAP_DECL(unsigned int32, int32, UIntMaskType, unsigned int64)
+DEFINE_ATOMIC_OP_DECL(int64, add)
+DEFINE_ATOMIC_OP_DECL(int64, subtract)
+DEFINE_ATOMIC_OP_DECL(int64, min)
+DEFINE_ATOMIC_OP_DECL(int64, max)
+DEFINE_ATOMIC_OP_DECL(int64, and)
+DEFINE_ATOMIC_OP_DECL(int64, or)
+DEFINE_ATOMIC_OP_DECL(int64, xor)
+DEFINE_ATOMIC_SWAP_DECL(int64)
 
-DEFINE_ATOMIC_OP_DECL(float, float, add, fadd, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(float, float, subtract, fsub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(float, float, min, fmin, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(float, float, max, fmax, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP_DECL(float, float, IntMaskType, int64)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, add)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, subtract)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, min)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, max)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, and)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, or)
+DEFINE_ATOMIC_OP_DECL(unsigned int64, xor)
+DEFINE_ATOMIC_SWAP_DECL(unsigned int64)
 
-DEFINE_ATOMIC_OP_DECL(int64, int64, add, add, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int64, int64, subtract, sub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(int64, int64, min, min, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(int64, int64, max, max, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int64, int64, and, and, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int64, int64, or, or, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(int64, int64, xor, xor, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP_DECL(int64, int64, IntMaskType, int64)
+DEFINE_ATOMIC_OP_DECL(int128, add)
+DEFINE_ATOMIC_OP_DECL(int128, subtract)
+DEFINE_ATOMIC_OP_DECL(int128, min)
+DEFINE_ATOMIC_OP_DECL(int128, max)
+DEFINE_ATOMIC_OP_DECL(int128, and)
+DEFINE_ATOMIC_OP_DECL(int128, or)
+DEFINE_ATOMIC_OP_DECL(int128, xor)
+DEFINE_ATOMIC_SWAP_DECL(int128)
 
-// For everything but atomic min and max, we can use the same
-// implementations for unsigned as for signed.
-DEFINE_ATOMIC_OP_DECL(unsigned int64, int64, add, add, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int64, int64, subtract, sub, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(unsigned int64, uint64, min, umin, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(unsigned int64, uint64, max, umax, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int64, int64, and, and, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int64, int64, or, or, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_OP_DECL(unsigned int64, int64, xor, xor, UIntMaskType, unsigned int64)
-DEFINE_ATOMIC_SWAP_DECL(unsigned int64, int64, UIntMaskType, unsigned int64)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, add)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, subtract)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, min)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, max)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, and)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, or)
+DEFINE_ATOMIC_OP_DECL(unsigned int128, xor)
+DEFINE_ATOMIC_SWAP_DECL(unsigned int128)
 
-DEFINE_ATOMIC_OP_DECL(double, double, add, fadd, IntMaskType, int64)
-DEFINE_ATOMIC_OP_DECL(double, double, subtract, fsub, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(double, double, min, fmin, IntMaskType, int64)
-DEFINE_ATOMIC_MINMAX_OP_DECL(double, double, max, fmax, IntMaskType, int64)
-DEFINE_ATOMIC_SWAP_DECL(double, double, IntMaskType, int64)
+DEFINE_ATOMIC_OP_DECL(float, add)
+DEFINE_ATOMIC_OP_DECL(float, subtract)
+DEFINE_ATOMIC_OP_DECL(float, min)
+DEFINE_ATOMIC_OP_DECL(float, max)
+DEFINE_ATOMIC_SWAP_DECL(float)
+
+DEFINE_ATOMIC_OP_DECL(double, add)
+DEFINE_ATOMIC_OP_DECL(double, subtract)
+DEFINE_ATOMIC_OP_DECL(double, min)
+DEFINE_ATOMIC_OP_DECL(double, max)
+DEFINE_ATOMIC_SWAP_DECL(double)
+
+ATOMIC_DECL_CMPXCHG_DECL(int32)
+ATOMIC_DECL_CMPXCHG_DECL(unsigned int32)
+ATOMIC_DECL_CMPXCHG_DECL(int64)
+ATOMIC_DECL_CMPXCHG_DECL(unsigned int64)
+ATOMIC_DECL_CMPXCHG_DECL(int128)
+ATOMIC_DECL_CMPXCHG_DECL(unsigned int128)
+ATOMIC_DECL_CMPXCHG_DECL(float)
+ATOMIC_DECL_CMPXCHG_DECL(double)
 
 #undef DEFINE_ATOMIC_OP_DECL
 #undef DEFINE_ATOMIC_MINMAX_OP_DECL
 #undef DEFINE_ATOMIC_SWAP_DECL
-
-#define ATOMIC_DECL_CMPXCHG_DECL(TA, TB, MASKTYPE, TC)                                                                 \
-    inline uniform TA atomic_compare_exchange_global(uniform TA *uniform ptr, uniform TA oldval, uniform TA newval);   \
-    inline TA atomic_compare_exchange_global(uniform TA *uniform ptr, TA oldval, TA newval);                           \
-    inline TA atomic_compare_exchange_global(uniform TA *varying ptr, TA oldval, TA newval);
-
-ATOMIC_DECL_CMPXCHG_DECL(int32, int32, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG_DECL(unsigned int32, int32, UIntMaskType, unsigned int64)
-ATOMIC_DECL_CMPXCHG_DECL(float, float, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG_DECL(int64, int64, IntMaskType, int64)
-ATOMIC_DECL_CMPXCHG_DECL(unsigned int64, int64, UIntMaskType, unsigned int64)
-ATOMIC_DECL_CMPXCHG_DECL(double, double, IntMaskType, int64)
-
 #undef ATOMIC_DECL_CMPXCHG_DECL
 
 // void * variants of swap and compare exchange
@@ -934,10 +943,16 @@ inline void *atomic_compare_exchange_global(void **ptr, void *oldval, void *newv
 ///////////////////////////////////////////////////////////////////////////
 // local atomics
 
-#define LOCAL_ATOMIC_DECL(TYPE, NAME, OPFUNC)                                                                          \
-    inline uniform TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, uniform TYPE value);                          \
-    inline TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, TYPE value);                                          \
+#define LOCAL_ATOMIC_DECL(TYPE, NAME)                                                                        \
+    inline uniform TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, uniform TYPE value);                \
+    inline TYPE atomic_##NAME##_local(uniform TYPE *uniform ptr, TYPE value);                                \
     inline TYPE atomic_##NAME##_local(uniform TYPE *p, TYPE value);
+
+#define LOCAL_CMPXCHG_DECL(TYPE)                                                                             \
+    inline uniform TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, uniform TYPE cmp,           \
+                                                      uniform TYPE update);                                  \
+    inline TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, TYPE cmp, TYPE update);             \
+    inline TYPE atomic_compare_exchange_local(uniform TYPE *varying p, TYPE cmp, TYPE update);
 
 inline uniform int32 __add(uniform int32 a, uniform int32 b);
 inline uniform int32 __sub(uniform int32 a, uniform int32 b);
@@ -953,10 +968,6 @@ inline uniform unsigned int32 __or(uniform unsigned int32 a, uniform unsigned in
 inline uniform unsigned int32 __xor(uniform unsigned int32 a, uniform unsigned int32 b);
 inline uniform unsigned int32 __swap(uniform unsigned int32 a, uniform unsigned int32 b);
 
-inline uniform float __add(uniform float a, uniform float b);
-inline uniform float __sub(uniform float a, uniform float b);
-inline uniform float __swap(uniform float a, uniform float b);
-
 inline uniform int64 __add(uniform int64 a, uniform int64 b);
 inline uniform int64 __sub(uniform int64 a, uniform int64 b);
 inline uniform int64 __and(uniform int64 a, uniform int64 b);
@@ -971,70 +982,101 @@ inline uniform unsigned int64 __or(uniform unsigned int64 a, uniform unsigned in
 inline uniform unsigned int64 __xor(uniform unsigned int64 a, uniform unsigned int64 b);
 inline uniform unsigned int64 __swap(uniform unsigned int64 a, uniform unsigned int64 b);
 
+inline uniform int128 __add(uniform int128 a, uniform int128 b);
+inline uniform int128 __sub(uniform int128 a, uniform int128 b);
+inline uniform int128 __and(uniform int128 a, uniform int128 b);
+inline uniform int128 __or(uniform int128 a, uniform int128 b);
+inline uniform int128 __xor(uniform int128 a, uniform int128 b);
+inline uniform int128 __swap(uniform int128 a, uniform int128 b);
+
+inline uniform unsigned int128 __add(uniform unsigned int128 a, uniform unsigned int128 b);
+inline uniform unsigned int128 __sub(uniform unsigned int128 a, uniform unsigned int128 b);
+inline uniform unsigned int128 __and(uniform unsigned int128 a, uniform unsigned int128 b);
+inline uniform unsigned int128 __or(uniform unsigned int128 a, uniform unsigned int128 b);
+inline uniform unsigned int128 __xor(uniform unsigned int128 a, uniform unsigned int128 b);
+inline uniform unsigned int128 __swap(uniform unsigned int128 a, uniform unsigned int128 b);
+
+inline uniform float __add(uniform float a, uniform float b);
+inline uniform float __sub(uniform float a, uniform float b);
+inline uniform float __swap(uniform float a, uniform float b);
+
 inline uniform double __add(uniform double a, uniform double b);
 inline uniform double __sub(uniform double a, uniform double b);
 inline uniform double __swap(uniform double a, uniform double b);
 
-LOCAL_ATOMIC_DECL(int32, add, __add)
-LOCAL_ATOMIC_DECL(int32, subtract, __sub)
-LOCAL_ATOMIC_DECL(int32, and, __and)
-LOCAL_ATOMIC_DECL(int32, or, __or)
-LOCAL_ATOMIC_DECL(int32, xor, __xor)
-LOCAL_ATOMIC_DECL(int32, min, min)
-LOCAL_ATOMIC_DECL(int32, max, max)
-LOCAL_ATOMIC_DECL(int32, swap, __swap)
+LOCAL_ATOMIC_DECL(int32, add)
+LOCAL_ATOMIC_DECL(int32, subtract)
+LOCAL_ATOMIC_DECL(int32, and)
+LOCAL_ATOMIC_DECL(int32, or)
+LOCAL_ATOMIC_DECL(int32, xor)
+LOCAL_ATOMIC_DECL(int32, min)
+LOCAL_ATOMIC_DECL(int32, max)
+LOCAL_ATOMIC_DECL(int32, swap)
 
-LOCAL_ATOMIC_DECL(unsigned int32, add, __add)
-LOCAL_ATOMIC_DECL(unsigned int32, subtract, __sub)
-LOCAL_ATOMIC_DECL(unsigned int32, and, __and)
-LOCAL_ATOMIC_DECL(unsigned int32, or, __or)
-LOCAL_ATOMIC_DECL(unsigned int32, xor, __xor)
-LOCAL_ATOMIC_DECL(unsigned int32, min, min)
-LOCAL_ATOMIC_DECL(unsigned int32, max, max)
-LOCAL_ATOMIC_DECL(unsigned int32, swap, __swap)
+LOCAL_ATOMIC_DECL(unsigned int32, add)
+LOCAL_ATOMIC_DECL(unsigned int32, subtract)
+LOCAL_ATOMIC_DECL(unsigned int32, and)
+LOCAL_ATOMIC_DECL(unsigned int32, or)
+LOCAL_ATOMIC_DECL(unsigned int32, xor)
+LOCAL_ATOMIC_DECL(unsigned int32, min)
+LOCAL_ATOMIC_DECL(unsigned int32, max)
+LOCAL_ATOMIC_DECL(unsigned int32, swap)
 
-LOCAL_ATOMIC_DECL(float, add, __add)
-LOCAL_ATOMIC_DECL(float, subtract, __sub)
-LOCAL_ATOMIC_DECL(float, min, min)
-LOCAL_ATOMIC_DECL(float, max, max)
-LOCAL_ATOMIC_DECL(float, swap, __swap)
+LOCAL_ATOMIC_DECL(int64, add)
+LOCAL_ATOMIC_DECL(int64, subtract)
+LOCAL_ATOMIC_DECL(int64, and)
+LOCAL_ATOMIC_DECL(int64, or)
+LOCAL_ATOMIC_DECL(int64, xor)
+LOCAL_ATOMIC_DECL(int64, min)
+LOCAL_ATOMIC_DECL(int64, max)
+LOCAL_ATOMIC_DECL(int64, swap)
 
-LOCAL_ATOMIC_DECL(int64, add, __add)
-LOCAL_ATOMIC_DECL(int64, subtract, __sub)
-LOCAL_ATOMIC_DECL(int64, and, __and)
-LOCAL_ATOMIC_DECL(int64, or, __or)
-LOCAL_ATOMIC_DECL(int64, xor, __xor)
-LOCAL_ATOMIC_DECL(int64, min, min)
-LOCAL_ATOMIC_DECL(int64, max, max)
-LOCAL_ATOMIC_DECL(int64, swap, __swap)
+LOCAL_ATOMIC_DECL(unsigned int64, add)
+LOCAL_ATOMIC_DECL(unsigned int64, subtract)
+LOCAL_ATOMIC_DECL(unsigned int64, and)
+LOCAL_ATOMIC_DECL(unsigned int64, or)
+LOCAL_ATOMIC_DECL(unsigned int64, xor)
+LOCAL_ATOMIC_DECL(unsigned int64, min)
+LOCAL_ATOMIC_DECL(unsigned int64, max)
+LOCAL_ATOMIC_DECL(unsigned int64, swap)
 
-LOCAL_ATOMIC_DECL(unsigned int64, add, __add)
-LOCAL_ATOMIC_DECL(unsigned int64, subtract, __sub)
-LOCAL_ATOMIC_DECL(unsigned int64, and, __and)
-LOCAL_ATOMIC_DECL(unsigned int64, or, __or)
-LOCAL_ATOMIC_DECL(unsigned int64, xor, __xor)
-LOCAL_ATOMIC_DECL(unsigned int64, min, min)
-LOCAL_ATOMIC_DECL(unsigned int64, max, max)
-LOCAL_ATOMIC_DECL(unsigned int64, swap, __swap)
+LOCAL_ATOMIC_DECL(int128, add)
+LOCAL_ATOMIC_DECL(int128, subtract)
+LOCAL_ATOMIC_DECL(int128, and)
+LOCAL_ATOMIC_DECL(int128, or)
+LOCAL_ATOMIC_DECL(int128, xor)
+LOCAL_ATOMIC_DECL(int128, min)
+LOCAL_ATOMIC_DECL(int128, max)
+LOCAL_ATOMIC_DECL(int128, swap)
 
-LOCAL_ATOMIC_DECL(double, add, __add)
-LOCAL_ATOMIC_DECL(double, subtract, __sub)
-LOCAL_ATOMIC_DECL(double, min, min)
-LOCAL_ATOMIC_DECL(double, max, max)
-LOCAL_ATOMIC_DECL(double, swap, __swap)
+LOCAL_ATOMIC_DECL(unsigned int128, add)
+LOCAL_ATOMIC_DECL(unsigned int128, subtract)
+LOCAL_ATOMIC_DECL(unsigned int128, and)
+LOCAL_ATOMIC_DECL(unsigned int128, or)
+LOCAL_ATOMIC_DECL(unsigned int128, xor)
+LOCAL_ATOMIC_DECL(unsigned int128, min)
+LOCAL_ATOMIC_DECL(unsigned int128, max)
+LOCAL_ATOMIC_DECL(unsigned int128, swap)
 
-// compare exchange
-#define LOCAL_CMPXCHG_DECL(TYPE)                                                                                       \
-    inline uniform TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, uniform TYPE cmp,                     \
-                                                      uniform TYPE update);                                            \
-    inline TYPE atomic_compare_exchange_local(uniform TYPE *uniform ptr, TYPE cmp, TYPE update);                       \
-    inline TYPE atomic_compare_exchange_local(uniform TYPE *varying p, TYPE cmp, TYPE update);
+LOCAL_ATOMIC_DECL(float, add)
+LOCAL_ATOMIC_DECL(float, subtract)
+LOCAL_ATOMIC_DECL(float, min)
+LOCAL_ATOMIC_DECL(float, max)
+LOCAL_ATOMIC_DECL(float, swap)
+
+LOCAL_ATOMIC_DECL(double, add)
+LOCAL_ATOMIC_DECL(double, subtract)
+LOCAL_ATOMIC_DECL(double, min)
+LOCAL_ATOMIC_DECL(double, max)
+LOCAL_ATOMIC_DECL(double, swap)
 
 LOCAL_CMPXCHG_DECL(int32)
 LOCAL_CMPXCHG_DECL(unsigned int32)
-LOCAL_CMPXCHG_DECL(float)
 LOCAL_CMPXCHG_DECL(int64)
 LOCAL_CMPXCHG_DECL(unsigned int64)
+LOCAL_CMPXCHG_DECL(int128)
+LOCAL_CMPXCHG_DECL(unsigned int128)
+LOCAL_CMPXCHG_DECL(float)
 LOCAL_CMPXCHG_DECL(double)
 
 #undef LOCAL_ATOMIC_DECL

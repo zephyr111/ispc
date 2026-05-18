@@ -821,7 +821,7 @@ EXT READNONE uniform int8 __reduce_min_int8(varying int8 x) { return @llvm.vecto
 EXT READNONE uniform int8 __reduce_max_int8(varying int8 x) { return @llvm.vector.reduce.smax(x); }
 
 // horizontal int16 ops
-EXT READNONE uniform int16 __reduce_add_int16(varying int16 x) { return @llvm.vector.reduce.add((int32)x); }
+EXT READNONE uniform int32 __reduce_add_int16(varying int16 x) { return @llvm.vector.reduce.add((int32)x); }
 EXT READNONE uniform int16 __reduce_min_int16(varying int16 x) { return @llvm.vector.reduce.smin(x); }
 EXT READNONE uniform int16 __reduce_max_int16(varying int16 x) { return @llvm.vector.reduce.smax(x); }
 
@@ -831,8 +831,9 @@ EXT READNONE uniform float __reduce_max_float(varying float x) { return @llvm.ve
 EXT READNONE uniform float __reduce_min_float(varying float x) { return @llvm.vector.reduce.fmin(x); }
 
 // horizontal int32 ops
+// TODO [zephyr111]: see the TODO below.
 // TODO!: don't we lose result with reduce_add having int32 return type?
-EXT READNONE uniform int32 __reduce_add_int32(varying int32 x) { return @llvm.vector.reduce.add((int64)x); }
+EXT READNONE uniform int64 __reduce_add_int32(varying int32 x) { return @llvm.vector.reduce.add((int64)x); }
 EXT READNONE uniform int32 __reduce_min_int32(varying int32 x) { return @llvm.vector.reduce.smin(x); }
 EXT READNONE uniform int32 __reduce_max_int32(varying int32 x) { return @llvm.vector.reduce.smax(x); }
 
@@ -855,7 +856,7 @@ EXT READNONE uniform double __reduce_max_double(varying double x) { return @llvm
 
 // horizontal int64 ops
 // TODO [zephyr111]: considering other functions cast `x` to a bigger type before the reduction, should we edit the 64-bit one so to use a 128-bit type?
-EXT READNONE uniform int64 __reduce_add_int64(varying int64 x) { return @llvm.vector.reduce.add(x); }
+EXT READNONE uniform int128 __reduce_add_int64(varying int64 x) { return @llvm.vector.reduce.add((int128)x); }
 EXT READNONE uniform int64 __reduce_min_int64(varying int64 x) { return @llvm.vector.reduce.smin(x); }
 EXT READNONE uniform int64 __reduce_max_int64(varying int64 x) { return @llvm.vector.reduce.smax(x); }
 
@@ -2952,10 +2953,10 @@ EXT void __soa_to_aos3_double(double v0, double v1, double v2, NOALIAS uniform i
     __soa_to_aos3<double>(v0, v1, v2, a);
 }
 
-EXT uniform double __atomic_swap_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
+EXT uniform float __atomic_swap_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
     return @llvm.ispc.atomicrmw.xchg.seq_cst(ptr, val);
 }
-EXT uniform float __atomic_swap_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
+EXT uniform double __atomic_swap_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
     return @llvm.ispc.atomicrmw.xchg.seq_cst(ptr, val);
 }
 EXT uniform int32 __atomic_swap_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
@@ -2964,10 +2965,16 @@ EXT uniform int32 __atomic_swap_uniform_int32_global(uniform int8 *uniform ptr, 
 EXT uniform int64 __atomic_swap_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
     return @llvm.ispc.atomicrmw.xchg.seq_cst(ptr, val);
 }
+EXT uniform int128 __atomic_swap_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
+    return @llvm.ispc.atomicrmw.xchg.seq_cst(ptr, val);
+}
 EXT uniform int32 __atomic_add_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
     return @llvm.ispc.atomicrmw.add.seq_cst(ptr, val);
 }
 EXT uniform int64 __atomic_add_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
+    return @llvm.ispc.atomicrmw.add.seq_cst(ptr, val);
+}
+EXT uniform int128 __atomic_add_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
     return @llvm.ispc.atomicrmw.add.seq_cst(ptr, val);
 }
 EXT uniform int32 __atomic_sub_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
@@ -2976,10 +2983,16 @@ EXT uniform int32 __atomic_sub_uniform_int32_global(uniform int8 *uniform ptr, u
 EXT uniform int64 __atomic_sub_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
     return @llvm.ispc.atomicrmw.sub.seq_cst(ptr, val);
 }
+EXT uniform int128 __atomic_sub_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
+    return @llvm.ispc.atomicrmw.sub.seq_cst(ptr, val);
+}
 EXT uniform int32 __atomic_and_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
     return @llvm.ispc.atomicrmw.and.seq_cst(ptr, val);
 }
 EXT uniform int64 __atomic_and_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
+    return @llvm.ispc.atomicrmw.and.seq_cst(ptr, val);
+}
+EXT uniform int128 __atomic_and_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
     return @llvm.ispc.atomicrmw.and.seq_cst(ptr, val);
 }
 EXT uniform int32 __atomic_or_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
@@ -2988,10 +3001,16 @@ EXT uniform int32 __atomic_or_uniform_int32_global(uniform int8 *uniform ptr, un
 EXT uniform int64 __atomic_or_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
     return @llvm.ispc.atomicrmw.or.seq_cst(ptr, val);
 }
+EXT uniform int128 __atomic_or_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
+    return @llvm.ispc.atomicrmw.or.seq_cst(ptr, val);
+}
 EXT uniform int32 __atomic_xor_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
     return @llvm.ispc.atomicrmw.xor.seq_cst(ptr, val);
 }
 EXT uniform int64 __atomic_xor_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
+    return @llvm.ispc.atomicrmw.xor.seq_cst(ptr, val);
+}
+EXT uniform int128 __atomic_xor_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
     return @llvm.ispc.atomicrmw.xor.seq_cst(ptr, val);
 }
 EXT uniform int32 __atomic_min_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
@@ -3000,10 +3019,16 @@ EXT uniform int32 __atomic_min_uniform_int32_global(uniform int8 *uniform ptr, u
 EXT uniform int64 __atomic_min_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
     return @llvm.ispc.atomicrmw.min.seq_cst(ptr, val);
 }
+EXT uniform int128 __atomic_min_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
+    return @llvm.ispc.atomicrmw.min.seq_cst(ptr, val);
+}
 EXT uniform int32 __atomic_max_uniform_int32_global(uniform int8 *uniform ptr, uniform int32 val) {
     return @llvm.ispc.atomicrmw.max.seq_cst(ptr, val);
 }
 EXT uniform int64 __atomic_max_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 val) {
+    return @llvm.ispc.atomicrmw.max.seq_cst(ptr, val);
+}
+EXT uniform int128 __atomic_max_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 val) {
     return @llvm.ispc.atomicrmw.max.seq_cst(ptr, val);
 }
 EXT uniform uint32 __atomic_umin_uniform_uint32_global(uniform int8 *uniform ptr, uniform uint32 val) {
@@ -3012,45 +3037,43 @@ EXT uniform uint32 __atomic_umin_uniform_uint32_global(uniform int8 *uniform ptr
 EXT uniform uint64 __atomic_umin_uniform_uint64_global(uniform int8 *uniform ptr, uniform uint64 val) {
     return @llvm.ispc.atomicrmw.umin.seq_cst(ptr, val);
 }
+EXT uniform uint128 __atomic_umin_uniform_uint128_global(uniform int8 *uniform ptr, uniform uint128 val) {
+    return @llvm.ispc.atomicrmw.umin.seq_cst(ptr, val);
+}
 EXT uniform uint32 __atomic_umax_uniform_uint32_global(uniform int8 *uniform ptr, uniform uint32 val) {
     return @llvm.ispc.atomicrmw.umax.seq_cst(ptr, val);
 }
 EXT uniform uint64 __atomic_umax_uniform_uint64_global(uniform int8 *uniform ptr, uniform uint64 val) {
     return @llvm.ispc.atomicrmw.umax.seq_cst(ptr, val);
 }
-EXT uniform double __atomic_fadd_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
-    return @llvm.ispc.atomicrmw.fadd.seq_cst(ptr, val);
+EXT uniform uint128 __atomic_umax_uniform_uint128_global(uniform int8 *uniform ptr, uniform uint128 val) {
+    return @llvm.ispc.atomicrmw.umax.seq_cst(ptr, val);
 }
 EXT uniform float __atomic_fadd_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
     return @llvm.ispc.atomicrmw.fadd.seq_cst(ptr, val);
 }
-EXT uniform double __atomic_fsub_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
-    return @llvm.ispc.atomicrmw.fsub.seq_cst(ptr, val);
+EXT uniform double __atomic_fadd_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
+    return @llvm.ispc.atomicrmw.fadd.seq_cst(ptr, val);
 }
 EXT uniform float __atomic_fsub_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
     return @llvm.ispc.atomicrmw.fsub.seq_cst(ptr, val);
 }
-EXT uniform double __atomic_fmin_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
-    return @llvm.ispc.atomicrmw.fmin.seq_cst(ptr, val);
+EXT uniform double __atomic_fsub_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
+    return @llvm.ispc.atomicrmw.fsub.seq_cst(ptr, val);
 }
 EXT uniform float __atomic_fmin_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
     return @llvm.ispc.atomicrmw.fmin.seq_cst(ptr, val);
 }
-EXT uniform double __atomic_fmax_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
-    return @llvm.ispc.atomicrmw.fmax.seq_cst(ptr, val);
+EXT uniform double __atomic_fmin_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
+    return @llvm.ispc.atomicrmw.fmin.seq_cst(ptr, val);
 }
 EXT uniform float __atomic_fmax_uniform_float_global(uniform int8 *uniform ptr, uniform float val) {
     return @llvm.ispc.atomicrmw.fmax.seq_cst(ptr, val);
 }
-
-UNMANGLED CDECL varying double __atomic_fadd_double_global(uniform int8 *uniform ptr, varying double val) {
-    varying double res;
-    foreach_active(i) {
-        uniform double r = __atomic_fadd_uniform_double_global(ptr, __extract(val, i));
-        res = __insert(res, i, r);
-    }
-    return res;
+EXT uniform double __atomic_fmax_uniform_double_global(uniform int8 *uniform ptr, uniform double val) {
+    return @llvm.ispc.atomicrmw.fmax.seq_cst(ptr, val);
 }
+
 UNMANGLED CDECL varying float __atomic_fadd_float_global(uniform int8 *uniform ptr, varying float val) {
     varying float res;
     foreach_active(i) {
@@ -3059,10 +3082,10 @@ UNMANGLED CDECL varying float __atomic_fadd_float_global(uniform int8 *uniform p
     }
     return res;
 }
-UNMANGLED CDECL varying double __atomic_fsub_double_global(uniform int8 *uniform ptr, varying double val) {
+UNMANGLED CDECL varying double __atomic_fadd_double_global(uniform int8 *uniform ptr, varying double val) {
     varying double res;
     foreach_active(i) {
-        uniform double r = __atomic_fsub_uniform_double_global(ptr, __extract(val, i));
+        uniform double r = __atomic_fadd_uniform_double_global(ptr, __extract(val, i));
         res = __insert(res, i, r);
     }
     return res;
@@ -3071,6 +3094,14 @@ UNMANGLED CDECL varying float __atomic_fsub_float_global(uniform int8 *uniform p
     varying float res;
     foreach_active(i) {
         uniform float r = __atomic_fsub_uniform_float_global(ptr, __extract(val, i));
+        res = __insert(res, i, r);
+    }
+    return res;
+}
+UNMANGLED CDECL varying double __atomic_fsub_double_global(uniform int8 *uniform ptr, varying double val) {
+    varying double res;
+    foreach_active(i) {
+        uniform double r = __atomic_fsub_uniform_double_global(ptr, __extract(val, i));
         res = __insert(res, i, r);
     }
     return res;
@@ -3120,6 +3151,18 @@ EXT varying int64 __atomic_add_int64_global(uniform int8 *uniform ptr, varying i
     uniform int64 final = @llvm.ispc.atomicrmw.add.seq_cst(ptr, red);
     return elt + final;
 }
+EXT varying int128 __atomic_add_int128_global(uniform int8 *uniform ptr, varying int128 val, UIntMaskType mask) {
+    varying int128 elt = 0;
+    varying int128 v = @llvm.ispc.select((bool)mask, val, elt);
+    uniform int128 red = __extract(v, 0);
+    for (uniform int32 i = 1; i < TARGET_WIDTH; i++) {
+        uniform int128 ei = __extract(v, i);
+        elt = __insert(elt, i, red);
+        red = red + ei;
+    }
+    uniform int128 final = @llvm.ispc.atomicrmw.add.seq_cst(ptr, red);
+    return elt + final;
+}
 EXT varying int32 __atomic_sub_int32_global(uniform int8 *uniform ptr, varying int32 val, UIntMaskType mask) {
     varying int32 elt = 0;
     varying int32 v = @llvm.ispc.select((bool)mask, val, elt);
@@ -3142,6 +3185,18 @@ EXT varying int64 __atomic_sub_int64_global(uniform int8 *uniform ptr, varying i
         red = red - ei;
     }
     uniform int64 final = @llvm.ispc.atomicrmw.sub.seq_cst(ptr, red);
+    return elt + final;
+}
+EXT varying int128 __atomic_sub_int128_global(uniform int8 *uniform ptr, varying int128 val, UIntMaskType mask) {
+    varying int128 elt = 0;
+    varying int128 v = @llvm.ispc.select((bool)mask, val, elt);
+    uniform int128 red = __extract(v, 0);
+    for (uniform int32 i = 1; i < TARGET_WIDTH; i++) {
+        uniform int128 ei = __extract(v, i);
+        elt = __insert(elt, i, red);
+        red = red - ei;
+    }
+    uniform int128 final = @llvm.ispc.atomicrmw.sub.seq_cst(ptr, red);
     return elt + final;
 }
 EXT varying int32 __atomic_and_int32_global(uniform int8 *uniform ptr, varying int32 val, UIntMaskType mask) {
@@ -3168,6 +3223,18 @@ EXT varying int64 __atomic_and_int64_global(uniform int8 *uniform ptr, varying i
     uniform int64 final = @llvm.ispc.atomicrmw.sub.seq_cst(ptr, red);
     return elt & final;
 }
+EXT varying int128 __atomic_and_int128_global(uniform int8 *uniform ptr, varying int128 val, UIntMaskType mask) {
+    varying int128 elt = -1;
+    varying int128 v = @llvm.ispc.select((bool)mask, val, elt);
+    uniform int128 red = __extract(v, 0);
+    for (uniform int32 i = 1; i < TARGET_WIDTH; i++) {
+        uniform int128 ei = __extract(v, i);
+        elt = __insert(elt, i, red);
+        red = red & ei;
+    }
+    uniform int128 final = @llvm.ispc.atomicrmw.sub.seq_cst(ptr, red);
+    return elt & final;
+}
 EXT varying int32 __atomic_or_int32_global(uniform int8 *uniform ptr, varying int32 val, UIntMaskType mask) {
     varying int32 elt = 0;
     varying int32 v = @llvm.ispc.select((bool)mask, val, elt);
@@ -3190,6 +3257,18 @@ EXT varying int64 __atomic_or_int64_global(uniform int8 *uniform ptr, varying in
         red = red | ei;
     }
     uniform int64 final = @llvm.ispc.atomicrmw.or.seq_cst(ptr, red);
+    return elt | final;
+}
+EXT varying int128 __atomic_or_int128_global(uniform int8 *uniform ptr, varying int128 val, UIntMaskType mask) {
+    varying int128 elt = 0;
+    varying int128 v = @llvm.ispc.select((bool)mask, val, elt);
+    uniform int128 red = __extract(v, 0);
+    for (uniform int32 i = 1; i < TARGET_WIDTH; i++) {
+        uniform int128 ei = __extract(v, i);
+        elt = __insert(elt, i, red);
+        red = red | ei;
+    }
+    uniform int128 final = @llvm.ispc.atomicrmw.or.seq_cst(ptr, red);
     return elt | final;
 }
 EXT varying int32 __atomic_xor_int32_global(uniform int8 *uniform ptr, varying int32 val, UIntMaskType mask) {
@@ -3216,6 +3295,18 @@ EXT varying int64 __atomic_xor_int64_global(uniform int8 *uniform ptr, varying i
     uniform int64 final = @llvm.ispc.atomicrmw.xor.seq_cst(ptr, red);
     return elt ^ final;
 }
+EXT varying int128 __atomic_xor_int128_global(uniform int8 *uniform ptr, varying int128 val, UIntMaskType mask) {
+    varying int128 elt = 0;
+    varying int128 v = @llvm.ispc.select((bool)mask, val, elt);
+    uniform int128 red = __extract(v, 0);
+    for (uniform int32 i = 1; i < TARGET_WIDTH; i++) {
+        uniform int128 ei = __extract(v, i);
+        elt = __insert(elt, i, red);
+        red = red ^ ei;
+    }
+    uniform int128 final = @llvm.ispc.atomicrmw.xor.seq_cst(ptr, red);
+    return elt ^ final;
+}
 
 unmasked uniform int32 __cmpxchg(uniform int8 *uniform ptr, uniform int32 cmp, uniform int32 val) {
     return @llvm.ispc.cmpxchg.seq_cst.seq_cst(ptr, cmp, val);
@@ -3223,12 +3314,15 @@ unmasked uniform int32 __cmpxchg(uniform int8 *uniform ptr, uniform int32 cmp, u
 unmasked uniform int64 __cmpxchg(uniform int8 *uniform ptr, uniform int64 cmp, uniform int64 val) {
     return @llvm.ispc.cmpxchg.seq_cst.seq_cst(ptr, cmp, val);
 }
+unmasked uniform int128 __cmpxchg(uniform int8 *uniform ptr, uniform int128 cmp, uniform int128 val) {
+    return @llvm.ispc.cmpxchg.seq_cst.seq_cst(ptr, cmp, val);
+}
 
 template <typename F, typename I>
 unmasked uniform F __atomic_cmpxchg_u(uniform int8 *uniform ptr, uniform F cmp, uniform F val) {
-    uniform I cmp_i64 = __bitcast<uniform I, uniform F>(cmp);
-    uniform I val_i64 = __bitcast<uniform I, uniform F>(val);
-    uniform I res = __cmpxchg(ptr, cmp_i64, val_i64);
+    uniform I cmp_casted = __bitcast<uniform I, uniform F>(cmp);
+    uniform I val_casted = __bitcast<uniform I, uniform F>(val);
+    uniform I res = __cmpxchg(ptr, cmp_casted, val_casted);
     return __bitcast<uniform F, uniform I>(res);
 }
 
@@ -3246,6 +3340,10 @@ EXT uniform int32 __atomic_compare_exchange_uniform_int32_global(uniform int8 *u
 }
 EXT uniform int64 __atomic_compare_exchange_uniform_int64_global(uniform int8 *uniform ptr, uniform int64 cmp,
                                                                  uniform int64 val) {
+    return __cmpxchg(ptr, cmp, val);
+}
+EXT uniform int128 __atomic_compare_exchange_uniform_int128_global(uniform int8 *uniform ptr, uniform int128 cmp,
+                                                                   uniform int128 val) {
     return __cmpxchg(ptr, cmp, val);
 }
 
@@ -3274,6 +3372,10 @@ UNMANGLED CDECL varying int32 __atomic_compare_exchange_int32_global(uniform int
 UNMANGLED CDECL varying int64 __atomic_compare_exchange_int64_global(uniform int8 *uniform ptr, varying int64 cmp,
                                                                      varying int64 val) {
     return __atomic_cmpxchg_v<int64, int64>(ptr, cmp, val);
+}
+UNMANGLED CDECL varying int128 __atomic_compare_exchange_int128_global(uniform int8 *uniform ptr, varying int128 cmp,
+                                                                       varying int128 val) {
+    return __atomic_cmpxchg_v<int128, int128>(ptr, cmp, val);
 }
 
 #undef NOESCAPE
