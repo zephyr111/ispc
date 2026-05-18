@@ -3149,12 +3149,14 @@ Stmt *SwitchStmt::TypeCheck() {
         return this;
     }
 
-    // TODO [zephyr111]: should we support 128-bit integers here?
-
     const Type *toType = nullptr;
     exprType = exprType->GetAsConstType();
     bool is64bit = (Type::EqualIgnoringConst(exprType->GetAsUniformType(), AtomicType::UniformUInt64) ||
                     Type::EqualIgnoringConst(exprType->GetAsUniformType(), AtomicType::UniformInt64));
+
+    // TODO [zephyr111]: should we support 128-bit integers here?
+    AssertPos(pos, !Type::EqualIgnoringConst(exprType->GetAsUniformType(), AtomicType::UniformUInt128) &&
+                    !Type::EqualIgnoringConst(exprType->GetAsUniformType(), AtomicType::UniformInt128));
 
     if (exprType->IsUniformType()) {
         if (is64bit) {

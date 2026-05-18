@@ -839,8 +839,6 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
         return std::numeric_limits<uint128_t>::max();
     }
 
-    // TODO [zephyr111]: be sure trailing invalid numbers are just ignored
-
     if(end != nullptr)
         *end = ptr;
     return val;

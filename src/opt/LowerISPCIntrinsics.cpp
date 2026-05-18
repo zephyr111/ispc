@@ -295,7 +295,8 @@ static llvm::Value *lLowerPackMaskIntrinsic(llvm::CallInst *CI) {
     llvm::Type *newVT = llvm::IntegerType::get(builder.getContext(), lGetVecNumElements(V));
     llvm::Value *packed = builder.CreateBitCast(V, newVT);
 
-    // TODO [zephyr111]: should this be modified so to return i128 integers?
+    // TODO [zephyr111]: should this be modified so to return i128 integers? 
+    //                   it looks like it is not needed because it is only used for masking.
 
     // zero extend to i64
     return builder.CreateZExt(packed, llvm::Type::getInt64Ty(builder.getContext()));
