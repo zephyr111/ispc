@@ -12,7 +12,7 @@
 #ifndef ISPC_BUILTINS_INFO_H
 #define ISPC_BUILTINS_INFO_H 1
 
-#include "../src/int128.h"
+#include "int128.h"
 
 namespace PrintInfo {
 

@@ -70,7 +70,8 @@ endif()
 list(APPEND BUILTINS_C_CPU_HEADER_DEPS
     builtins/array.hpp
     builtins/builtins-c-common.hpp
-    src/builtins-info.h)
+    src/builtins-info.h
+    src/int128.h)
 
 function(target_ll_to_cpp target bit os CPP_LIST BC_LIST)
     set(input builtins/target-${target}.ll)

@@ -643,13 +643,10 @@ bool ispc::IsStdin(const char *filepath) {
 // Decompose `v` in two parts so `v = hi * div + sign(v) * lo`, with `0 <= lo < div`
 // Assume `div` is positive
 static inline void BigDivMod(int128_t v, int128_t div, int128_t& hi, int128_t& lo) {
-    if(v >= 0) {
-        hi = v / div;
-        lo = v - hi * div;
-    } else {
-        hi = (v + (div - 1)) / div;
-        lo = hi * div - v;
-    }
+    const int128_t tmp_hi = v / div;
+    const int128_t tmp_lo = v - tmp_hi * div;
+    hi = tmp_hi;
+    lo = (tmp_lo < 0) ? -tmp_lo : tmp_lo;
 }
 
 // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!

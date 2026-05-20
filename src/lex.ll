@@ -612,6 +612,7 @@ lParseInteger(bool dotdotdot) {
             Assert(dotdotdot && *endPtr == '.');
     }
 
+    // TODO [zephyr111]: the following check does not actually consider the kMG suffix!
     if (*endPtr != 0) {
         if (errno == ERANGE)
             Warning(yylloc, "Can't represent the integer constant with a 128-bit integer type");
@@ -650,9 +651,9 @@ lParseInteger(bool dotdotdot) {
             return us ? TOKEN_UINT32_CONSTANT : TOKEN_INT32_CONSTANT;
         else if (us) {
             // u suffix only
-            if (yylval.intVal <= 0xffffffffL)
+            if (yylval.intVal <= 0xfffffffful)
                 return TOKEN_UINT32_CONSTANT;
-            else if (yylval.intVal <= 0xffffffffffffffffL)
+            else if (yylval.intVal <= 0xfffffffffffffffful)
                 return TOKEN_UINT64_CONSTANT;
             else
                 return TOKEN_UINT128_CONSTANT;
@@ -662,28 +663,28 @@ lParseInteger(bool dotdotdot) {
             // If we're compiling to an 8-bit mask target and the constant
             // fits into 8 bits, return an 8-bit int.
             if (g->target->getDataTypeWidth() == 8) {
-                if (yylval.intVal <= 0x7fULL)
+                if (yylval.intVal <= 0x7full)
                     return TOKEN_INT8_CONSTANT;
-                else if (yylval.intVal <= 0xffULL)
+                else if (yylval.intVal <= 0xffull)
                     return TOKEN_UINT8_CONSTANT;
             }
             // And similarly for 16-bit masks and constants
             if (g->target->getDataTypeWidth() == 16) {
-                if (yylval.intVal <= 0x7fffULL)
+                if (yylval.intVal <= 0x7fffull)
                     return TOKEN_INT16_CONSTANT;
-                else if (yylval.intVal <= 0xffffULL)
+                else if (yylval.intVal <= 0xffffull)
                     return TOKEN_UINT16_CONSTANT;
             }
             // Otherwise, see if we can fit this into a 32-bit integer...
-            if (yylval.intVal <= 0x7fffffffULL)
+            if (yylval.intVal <= 0x7fffffffull)
                 return TOKEN_INT32_CONSTANT;
-            else if (yylval.intVal <= 0xffffffffULL)
+            else if (yylval.intVal <= 0xffffffffull)
                 return TOKEN_UINT32_CONSTANT;
-            else if (yylval.intVal <= 0x7fffffffffffffffULL)
+            else if (yylval.intVal <= 0x7fffffffffffffffull)
                 return TOKEN_INT64_CONSTANT;
-            else if (yylval.intVal <= (uint128_t)0xffffffffffffffffULL)
+            else if (yylval.intVal <= (uint128_t)0xffffffffffffffffull)
                 return TOKEN_UINT64_CONSTANT;
-            else if (yylval.intVal <= ((((uint128_t)0x7fffffffffffffffULL) << 64ull) | 0xffffffffffffffffULL))
+            else if (yylval.intVal <= ((((uint128_t)0x7fffffffffffffffull) << 64ull) | 0xffffffffffffffffull))
                 return TOKEN_INT128_CONSTANT;
             else
                 return TOKEN_UINT128_CONSTANT;
