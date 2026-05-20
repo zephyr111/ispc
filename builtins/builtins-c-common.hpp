@@ -35,8 +35,16 @@ static inline const char *ValueAdapterImpl(bool val) { return val ? "true" : "fa
 // TODO [zephyr111]: FIXME: test this code carefully!
 // TODO [zephyr111]: replace this with a basic print and %w128d and %w128u formats if _BitInt is guaranteed to be the standard and the target standard C library support it (full C23 support for _Bitint).
 
-static inline int128_t Int128Abs(int128_t v) {
-    return v < 0 ? -v : v;
+// Decompose `v` in two parts so `v = hi * div + sign(v) * lo`, with `0 <= lo < div`
+// Assume `div` is positive
+static inline void ValueBigDivMod(int128_t v, int128_t div, int128_t& hi, int128_t& lo) {
+    if(v >= 0) {
+        hi = v / div;
+        lo = v - hi * div;
+    } else {
+        hi = (v + (div - 1)) / div;
+        lo = hi * div - v;
+    }
 }
 
 static inline const char* ValueAdapterImpl(int128_t v) {
@@ -50,15 +58,14 @@ static inline const char* ValueAdapterImpl(int128_t v) {
     }
 
     if(-val_1e36 < v && v < val_1e36) {
-        const int128_t hi = v / val_1e18;
-        const int128_t lo = Int128Abs(v - hi * val_1e18);
+        int128_t hi, lo;
+        ValueBigDivMod(v, val_1e18, hi, lo);
         sprintf(buff, "%" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)lo);
     }
     else {
-        const int128_t hi = v / val_1e36;
-        const int128_t tmp = Int128Abs(v - hi * val_1e36);
-        const int128_t mi = tmp / val_1e18;
-        const int128_t lo = tmp % val_1e18;
+        int128_t hi, mi, lo;
+        ValueBigDivMod(v, val_1e36, hi, mi);
+        ValueBigDivMod(mi, val_1e18, mi, lo);
         sprintf(buff, "%" PRId64 "%018" PRId64 "%018" PRId64, (int64_t)hi, (int64_t)mi, (int64_t)lo);
     }
 
@@ -84,7 +91,7 @@ static inline const char* ValueAdapterImpl(uint128_t v) {
         const uint128_t hi = v / val_1e36;
         const uint128_t tmp = v - hi * val_1e36;
         const uint128_t mi = tmp / val_1e18;
-        const uint128_t lo = tmp % val_1e18;
+        const uint128_t lo = tmp - mi * val_1e18;
         sprintf(buff, "%" PRIu64 "%018" PRIu64 "%018" PRIu64, (uint64_t)hi, (uint64_t)mi, (uint64_t)lo);
     }
 

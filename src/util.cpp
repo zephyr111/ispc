@@ -640,35 +640,43 @@ bool ispc::IsStdin(const char *filepath) {
     }
 }
 
-static inline int128_t Int128Abs(int128_t v) {
-    return v < 0 ? -v : v;
+// Decompose `v` in two parts so `v = hi * div + sign(v) * lo`, with `0 <= lo < div`
+// Assume `div` is positive
+static inline void BigDivMod(int128_t v, int128_t div, int128_t& hi, int128_t& lo) {
+    if(v >= 0) {
+        hi = v / div;
+        lo = v - hi * div;
+    } else {
+        hi = (v + (div - 1)) / div;
+        lo = hi * div - v;
+    }
 }
 
 // TODO [zephyr111]: FIXME: test this code carefully, especially for negative numbers!
 std::string ispc::ToString(int128_t v) {
     const int64_t val_1e18 = 1000000000000000000ll;
     const int128_t val_1e36 = (int128_t)val_1e18 * val_1e18;
-    std::ostringstream oss;
 
-    if(v > -val_1e18 && v < val_1e18)
+    if(-val_1e18 < v && v < val_1e18)
         return std::to_string((int64_t)v);
 
+    std::ostringstream oss;
+
     if(-val_1e36 < v && v < val_1e36) {
-        const int128_t hi = v / val_1e18;
-        const int128_t lo = Int128Abs(v - hi * val_1e18);
+        int128_t hi, lo;
+        BigDivMod(v, val_1e18, hi, lo);
         oss << (int64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (int64_t)lo;
+        oss << std::setw(18) << (int64_t)lo;
     }
     else {
-        const int128_t hi = v / val_1e36;
-        const int128_t tmp = Int128Abs(v - hi * val_1e36);
-        const int128_t mi = tmp / val_1e18;
-        const int128_t lo = tmp % val_1e18;
+        int128_t hi, mi, lo;
+        BigDivMod(v, val_1e36, hi, mi);
+        BigDivMod(mi, val_1e18, mi, lo);
         oss << (int64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (int64_t)mi;
-        oss << std::setw(9) << (int64_t)lo;
+        oss << std::setw(18) << (int64_t)mi;
+        oss << std::setw(18) << (int64_t)lo;
     }
 
     return oss.str();
@@ -688,17 +696,17 @@ std::string ispc::ToString(uint128_t v) {
         const uint128_t lo = v - hi * val_1e18;
         oss << (uint64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (uint64_t)lo;
+        oss << std::setw(18) << (uint64_t)lo;
     }
     else {
         const uint128_t hi = v / val_1e36;
         const uint128_t tmp = v - hi * val_1e36;
         const uint128_t mi = tmp / val_1e18;
-        const uint128_t lo = tmp % val_1e18;
+        const uint128_t lo = tmp - mi * val_1e18;
         oss << (uint64_t)hi;
         oss.fill('0');
-        oss << std::setw(9) << (uint64_t)mi;
-        oss << std::setw(9) << (uint64_t)lo;
+        oss << std::setw(18) << (uint64_t)mi;
+        oss << std::setw(18) << (uint64_t)lo;
     }
 
     return oss.str();
@@ -755,7 +763,7 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
     uint128_t val = 0;
 
     if (isBase2) {
-        const uint128_t highBits = ((uint128_t)1) << 127;
+        const uint128_t highBits = ((uint128_t)1) << 127u;
 
         while (*ptr == '0' || *ptr == '1') {
             if ((val & highBits) != 0) [[unlikely]] {
@@ -769,7 +777,7 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
             ++ptr;
         }
     } else if (isBase8) {
-        const uint128_t highBits = ((uint128_t)1) << 125;
+        const uint128_t highBits = ((uint128_t)1) << 125u;
 
         while (*ptr >= '0' && *ptr <= '7') {
             if ((val & highBits) != 0) [[unlikely]] {
@@ -783,7 +791,7 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
             ++ptr;
         }
     } else if (isBase10) {
-        const uint128_t limit = (((uint128_t)0x1999999999999999) << 64) | 0x9999999999999999;
+        const uint128_t limit = (((uint128_t)0x1999999999999999ull) << 64ull) | 0x9999999999999999ull;
 
         while (*ptr >= '0' && *ptr <= '9') {
             if (val >= limit) {
@@ -799,7 +807,7 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
             ++ptr;
         }
     } else if (isBase16) {
-        const uint128_t highBits = ((uint128_t)1) << 124;
+        const uint128_t highBits = ((uint128_t)1u) << 124u;
         const uint8_t no = 0xFF;
         static const uint8_t LUT[256] = {
             no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no,
@@ -820,7 +828,7 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
             no, no, no, no, no, no, no, no, no, no, no, no, no, no, no, no
         };
 
-        while ((CHAR_BIT == 8 || *ptr < 256) && LUT[(uint8_t)*ptr] != no) {
+        while ((CHAR_BIT == 8 || (*ptr & ~(char)0x7F) == 0) && LUT[(uint8_t)*ptr] != no) {
             if ((val & highBits) != 0) [[unlikely]] {
                 if(end != nullptr)
                     *end = ptr;
@@ -845,9 +853,9 @@ uint128_t ispc::StrToUint128(const char* start, const char** end, int base) {
 }
 
 std::ostream& operator<<(std::ostream& stream, int128_t v) {
-    const int64_t val_1e9 = 1000000000ll;
+    const int64_t val_1e18 = 1000000000000000000ll;
 
-    if(v < val_1e9)
+    if(-val_1e18 < v && v < val_1e18)
         stream << (int64_t)v;
     else
         stream << ispc::ToString(v);
@@ -856,9 +864,9 @@ std::ostream& operator<<(std::ostream& stream, int128_t v) {
 }
 
 std::ostream& operator<<(std::ostream& stream, uint128_t v) {
-    const uint64_t val_1e9 = 1000000000ull;
+    const uint64_t val_1e18 = 1000000000000000000ull;
 
-    if(v < val_1e9)
+    if(v < val_1e18)
         stream << (uint64_t)v;
     else
         stream << ispc::ToString(v);
