@@ -11,3 +11,13 @@ float RoundToInt(float x)
 {
     return round(x);
 }
+
+// CHECK-LABEL: RoundToInt___vyd:
+// CHECK-NEXT: # %bb.0:
+// CHECK-NEXT: vroundpd        ymm0, {{.*}}, 8
+// CHECK-NEXT: vroundpd        ymm1, {{.*}}, 8
+// CHECK-NEXT: ret
+double RoundToInt(double x)
+{
+    return round(x);
+}
