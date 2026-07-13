@@ -1,4 +1,5 @@
 // RUN: %{ispc} --pic --target=avx512skx-x8 %s --x86-asm-syntax=intel --emit-asm -o - | FileCheck %s
+// RUN: %{ispc} --pic --target=avx2-i32x8 %s --x86-asm-syntax=intel --emit-asm -o - | FileCheck %s
 
 // REQUIRES: !MACOS_HOST && X86_ENABLED
 
