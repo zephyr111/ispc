@@ -450,7 +450,7 @@ EXT READNONE varying float __floor_varying_float(varying float x) { return @llvm
 
 // There are not any rounding instructions in SSE2 and the roundeven function
 // (defined in C23) is not defined in the MSVC's CRT yet.
-// Thus, calling llvm.roundeven on SSE2 systems would results in an error. 
+// Thus, calling llvm.roundeven on SSE2 systems would results in an error.
 // So we have to emulate the functionality with multiple instructions...
 // This code is initially comming from the SSE2 target file.
 EXT READNONE uniform float __round_uniform_float(uniform float x) {
