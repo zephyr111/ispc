@@ -100,6 +100,14 @@ define double @__max_uniform_double(double, double) nounwind readnone alwaysinli
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; round
+
+define double @__round_uniform_double(double) nounwind readonly alwaysinline {
+  %res = call double @llvm.roundeven(double %0)
+  ret double %res
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rsqrt
 
 define(`rsqrt14_uniform', `
