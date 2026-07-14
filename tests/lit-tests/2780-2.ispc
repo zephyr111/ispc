@@ -1,4 +1,4 @@
-// RUN: %{ispc} --pic --target=neon-i32x4 %s --x86-asm-syntax=intel --emit-asm -o - | FileCheck %s
+// RUN: %{ispc} --pic --target=neon-i32x4 %s --emit-asm -o - | FileCheck %s
 
 // REQUIRES: ARM_ENABLED
 
