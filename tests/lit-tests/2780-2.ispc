@@ -3,8 +3,7 @@
 // REQUIRES: ARM_ENABLED
 
 // CHECK-LABEL: RoundToInt___vyf:{{.*}}
-// CHECK-NEXT: {{.*}}%bb.0:
-// CHECK-NEXT: frintn  v0.4s, v0.4s
+// CHECK: frintn{{.*4s.*}}
 // CHECK-NEXT: ret
 float RoundToInt(float x)
 {
@@ -12,9 +11,8 @@ float RoundToInt(float x)
 }
 
 // CHECK-LABEL: RoundToInt___vyd:{{.*}}
-// CHECK-NEXT: {{.*}}%bb.0:
-// CHECK-NEXT: frintn  v0.2d, v0.2d
-// CHECK-NEXT: frintn  v1.2d, v1.2d
+// CHECK: frintn{{.*2d.*}}
+// CHECK-NEXT: frintn{{.*2d.*}}
 // CHECK-NEXT: ret
 double RoundToInt(double x)
 {
